@@ -15,13 +15,19 @@
     .fr-header, .fr-header__brand { filter: none !important; --hover: transparent; }
     .codebox { width: 100%; min-height: 250px; font-family: monospace; }
     #operator-section { display: none; } /* Caché par défaut */
+    .note { font-size: 0.9rem; color: #666; margin-top: 1rem; }
   </style>
 </head>
 <body>
 
   <div class="fr-container">
     <h2 class="fr-h3">Générateur d’en-tête DSFR</h2>
-    <p class="fr-text--sm">Remplis les champs ci-dessous, prévisualise, puis génère le code HTML statique à copier.</p>
+    <p class="fr-text--sm">
+      Remplissez les champs ci-dessous, prévisualisez le rendu, puis générez le code HTML statique à copier.
+      <br><br>
+      <strong>💡 Conseil :</strong> le code généré est conçu pour être collé directement dans la configuration du
+      <em>Custom Widget Builder</em> du développeur <strong>berhalak</strong> sur <a href="https://grist.numerique.gouv.fr" target="_blank">grist.numerique.gouv.fr</a>.
+    </p>
 
     <form id="config-form" class="fr-my-3w">
       <div class="fr-select-group fr-mb-3w">
@@ -33,12 +39,12 @@
 
       <div class="fr-input-group fr-mb-3w">
         <label class="fr-label" for="nomService">Nom du service</label>
-        <input id="nomService" class="fr-input" type="text" placeholder="ex : Gendarmerie nationale">
+        <input id="nomService" class="fr-input" type="text" placeholder="">
       </div>
 
       <div class="fr-input-group fr-mb-3w">
         <label class="fr-label" for="baseline">Baseline (sous-titre)</label>
-        <input id="baseline" class="fr-input" type="text" placeholder="ex : Groupement III/6">
+        <input id="baseline" class="fr-input" type="text" placeholder="">
       </div>
 
       <div class="fr-input-group fr-mb-3w">
@@ -47,9 +53,9 @@
       </div>
 
       <div class="fr-btns-group fr-btns-group--right">
-        <button type="button" id="btn-preview" class="fr-btn">Prévisualiser</button>
-        <button type="button" id="btn-generate" class="fr-btn fr-btn--secondary">Générer le HTML final</button>
-        <button type="button" id="btn-reset" class="fr-btn fr-btn--tertiary">Réinitialiser</button>
+        <button type="button" id="btn-preview" class="fr-btn">Prévisualisez</button>
+        <button type="button" id="btn-generate" class="fr-btn fr-btn--secondary">Générez le HTML final</button>
+        <button type="button" id="btn-reset" class="fr-btn fr-btn--tertiary">Réinitialisez</button>
       </div>
     </form>
 
@@ -85,6 +91,9 @@
         <button type="button" id="btn-copy" class="fr-btn">Copier</button>
         <button type="button" id="btn-download" class="fr-btn fr-btn--secondary">Télécharger</button>
       </div>
+      <p class="note">
+        💡 Collez ce code dans le <strong>Custom Widget Builder</strong> de <strong>berhalak</strong> pour l’utiliser dans un widget Grist.
+      </p>
     </div>
   </div>
 

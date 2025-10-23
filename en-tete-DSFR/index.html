@@ -9,14 +9,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@gouvfr/dsfr@1.13.1/dist/dsfr/dsfr.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@gouvfr/dsfr@1.13.1/dist/dsfr/utility/utilities.min.css">
 
-  <style>
-    body { background: white; margin: 0; padding: 1rem; }
-    .fr-container { max-width: 800px; }
-    .fr-header, .fr-header__brand { filter: none !important; --hover: transparent; }
-    .codebox { width: 100%; min-height: 250px; font-family: monospace; }
-    #operator-section { display: none; }
-    .note { font-size: 0.9rem; color: #666; margin-top: 1rem; }
-  </style>
+  <!-- Ton CSS -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -26,7 +20,7 @@
       Remplissez les champs ci-dessous, prévisualisez le rendu, puis générez le code HTML statique à copier.
       <br><br>
       <strong>💡 Conseil :</strong> le code généré est conçu pour être collé directement dans la configuration du
-      <em>Custom Widget Builder</em> du développeur <strong>berhalak</strong> sur 
+      <em>Custom Widget Builder</em> du développeur <strong>berhalak</strong> sur
       <a href="https://grist.numerique.gouv.fr" target="_blank">grist.numerique.gouv.fr</a>.
     </p>
 
@@ -61,11 +55,10 @@
     </form>
 
     <div id="preview" style="display:none;" class="fr-mb-4w">
-     <header role="banner" class="fr-header">
+      <header role="banner" class="fr-header">
         <div class="fr-header__body">
           <div class="fr-container">
             <div class="fr-header__body-row">
-              <!-- Bloc Marianne / ministère -->
               <div class="fr-header__brand fr-enlarge-link">
                 <div class="fr-header__brand-top">
                   <div class="fr-header__logo">
@@ -75,12 +68,10 @@
                     <img id="logo-img" class="fr-responsive-img" style="max-width: 9rem;" alt="Logo">
                   </div>
                 </div>
-              </div>
-      
-              <!-- Bloc service à droite -->
-              <div class="fr-header__service">
-                <p class="fr-header__service-title" id="nom-service"></p>
-                <p class="fr-header__service-tagline" id="baseline-text"></p>
+                <div class="fr-header__service">
+                  <p class="fr-header__service-title" id="nom-service"></p>
+                  <p class="fr-header__service-tagline" id="baseline-text"></p>
+                </div>
               </div>
             </div>
           </div>
@@ -113,7 +104,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@gouvfr/dsfr@1.13.1/dist/dsfr/dsfr.module.min.js" type="module"></script>
   <script src="https://cdn.jsdelivr.net/npm/@gouvfr/dsfr@1.13.1/dist/dsfr/dsfr.nomodule.min.js" nomodule></script>
 
-  <!-- Script principal -->
-  <script src="./script.js"></script>
+  <!-- Ton JS -->
+  <script src="script.js"></script>
 </body>
 </html>

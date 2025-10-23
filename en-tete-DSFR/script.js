@@ -1,11 +1,4 @@
-/* ============================================================
- * Générateur d’en-tête DSFR — Widget Grist
- * Adapted from: agrippaharfleur/grist-custom-widgets
- * Original code under MIT License
- * Modified & adapted by: github.com/athenor-lnz
- * ============================================================
- */
-
+// Liste des administrations avec césures officielles DSFR
 const cesuresAdmin = {
   "République française": "République<br>Française",
   "Premier ministre": "Premier<br>ministre",
@@ -23,9 +16,7 @@ const cesuresAdmin = {
   "Ministère de l’Agriculture et de l’Alimentation": "Ministère<br>de l’Agriculture<br>et de l’Alimentation"
 };
 
-/**
- * Initialise le sélecteur du bloc marque
- */
+// Remplissage de la liste déroulante au chargement
 document.addEventListener('DOMContentLoaded', () => {
   const select = document.getElementById('intitule');
   Object.keys(cesuresAdmin).forEach(key => {
@@ -36,22 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/**
- * Échappe le HTML (prévention XSS)
- */
+// Fonction pour échapper le HTML avant insertion
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, m => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
   }[m]));
 }
 
-/**
- * Applique la prévisualisation à l'écran
- */
+// Mise à jour de la prévisualisation
 function applyPreview({ intitule, nomService, baseline, logoUrl }) {
   const intElem = document.getElementById('intitule-officiel');
   const nomElem = document.getElementById('nom-service');
@@ -74,9 +57,7 @@ function applyPreview({ intitule, nomService, baseline, logoUrl }) {
   document.getElementById('preview').style.display = 'block';
 }
 
-/**
- * Construit le code HTML final à exporter
- */
+// Génération du HTML final
 function buildFinalHtml({ intitule, nomService, baseline, logoUrl }) {
   const marque = cesuresAdmin[intitule] || intitule || 'République<br>Française';
   const opBlock = logoUrl
@@ -98,7 +79,6 @@ body {margin:0;background:#fff;}
   <div class="fr-header__body">
     <div class="fr-container">
       <div class="fr-header__body-row">
-        <!-- Bloc Marianne / ministère -->
         <div class="fr-header__brand fr-enlarge-link">
           <div class="fr-header__brand-top">
             <div class="fr-header__logo">
@@ -106,12 +86,10 @@ body {margin:0;background:#fff;}
             </div>
             ${opBlock}
           </div>
-        </div>
-
-        <!-- Bloc service à droite -->
-        <div class="fr-header__service">
-          <p class="fr-header__service-title">${escapeHtml(nomService)}</p>
-          <p class="fr-header__service-tagline">${escapeHtml(baseline)}</p>
+          <div class="fr-header__service">
+            <p class="fr-header__service-title">${escapeHtml(nomService)}</p>
+            <p class="fr-header__service-tagline">${escapeHtml(baseline)}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -121,10 +99,7 @@ body {margin:0;background:#fff;}
 </html>`;
 }
 
-
-/**
- * Récupère les données saisies
- */
+// Récupération des données du formulaire
 function getData() {
   return {
     intitule: document.getElementById('intitule').value,
@@ -134,15 +109,14 @@ function getData() {
   };
 }
 
-/**
- * Gestion des boutons
- */
+// Prévisualisation
 document.getElementById('btn-preview').addEventListener('click', () => {
   const data = getData();
   applyPreview(data);
   document.getElementById('result-block').style.display = 'none';
 });
 
+// Génération du code
 document.getElementById('btn-generate').addEventListener('click', () => {
   const data = getData();
   applyPreview(data);
@@ -151,22 +125,23 @@ document.getElementById('btn-generate').addEventListener('click', () => {
   document.getElementById('result-block').style.display = 'block';
 });
 
+// Copie du code
 document.getElementById('btn-copy').addEventListener('click', async () => {
   await navigator.clipboard.writeText(document.getElementById('export-code').value);
   alert('✅ Code copié dans le presse-papiers');
 });
 
+// Téléchargement du code
 document.getElementById('btn-download').addEventListener('click', () => {
   const html = document.getElementById('export-code').value;
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'header-dsfr.html';
-  a.click();
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = 'header-dsfr.html';
+  a.click(); URL.revokeObjectURL(url);
 });
 
+// Réinitialisation
 document.getElementById('btn-reset').addEventListener('click', () => {
   document.getElementById('config-form').reset();
   document.getElementById('preview').style.display = 'none';

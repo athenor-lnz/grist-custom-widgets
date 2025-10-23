@@ -83,19 +83,22 @@ function buildFinalHtml({ intitule, nomService, baseline, logoUrl }) {
     ? `<div class="fr-header__operator"><img class="fr-responsive-img" style="max-width:9rem;" src="${logoUrl}" alt="Logo"></div>`
     : '';
 
-  // Code HTML généré sans bloc de crédit
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@gouvfr/dsfr@1.13.1/dist/dsfr/dsfr.min.css">
-<style>body{margin:0;background:#fff;}.fr-header,.fr-header__brand{filter:none!important;}</style>
+<style>
+body {margin:0;background:#fff;}
+.fr-header, .fr-header__brand {filter:none!important;}
+</style>
 </head>
 <body>
 <header role="banner" class="fr-header">
   <div class="fr-header__body">
     <div class="fr-container">
       <div class="fr-header__body-row">
+        <!-- Bloc Marianne / ministère -->
         <div class="fr-header__brand fr-enlarge-link">
           <div class="fr-header__brand-top">
             <div class="fr-header__logo">
@@ -103,10 +106,12 @@ function buildFinalHtml({ intitule, nomService, baseline, logoUrl }) {
             </div>
             ${opBlock}
           </div>
-          <div class="fr-header__service">
-            <p class="fr-header__service-title">${escapeHtml(nomService)}</p>
-            <p class="fr-header__service-tagline">${escapeHtml(baseline)}</p>
-          </div>
+        </div>
+
+        <!-- Bloc service à droite -->
+        <div class="fr-header__service">
+          <p class="fr-header__service-title">${escapeHtml(nomService)}</p>
+          <p class="fr-header__service-tagline">${escapeHtml(baseline)}</p>
         </div>
       </div>
     </div>
@@ -115,6 +120,7 @@ function buildFinalHtml({ intitule, nomService, baseline, logoUrl }) {
 </body>
 </html>`;
 }
+
 
 /**
  * Récupère les données saisies

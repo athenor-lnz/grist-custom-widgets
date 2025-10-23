@@ -1,29 +1,35 @@
+/* --- Base --- */
 body {
   background: white;
   margin: 0;
   padding: 1rem;
 }
 
+/* Largeur du conteneur principal */
 .fr-container {
   max-width: 800px;
 }
 
+/* Empêche les filtres visuels et hover DSFR sur le header */
 .fr-header,
 .fr-header__brand {
   filter: none !important;
   --hover: transparent;
 }
 
+/* Zone de texte du code généré */
 .codebox {
   width: 100%;
   min-height: 250px;
   font-family: monospace;
 }
 
+/* Cache par défaut le bloc logo opérateur (optionnel) */
 #operator-section {
   display: none;
 }
 
+/* Style du texte d’aide / crédits */
 .note {
   font-size: 0.9rem;
   color: #666;

@@ -1,0 +1,31 @@
+body {
+  background: white;
+  margin: 0;
+  padding: 1rem;
+}
+
+.fr-container {
+  max-width: 800px;
+}
+
+.fr-header,
+.fr-header__brand {
+  filter: none !important;
+  --hover: transparent;
+}
+
+.codebox {
+  width: 100%;
+  min-height: 250px;
+  font-family: monospace;
+}
+
+#operator-section {
+  display: none;
+}
+
+.note {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 1rem;
+}

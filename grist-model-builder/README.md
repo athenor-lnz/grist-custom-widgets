@@ -42,6 +42,12 @@ Dans Grist : **Ajouter un widget → Personnalisé → URL personnalisée** puis
 
 Types supportés : `Text`, `Numeric`, `Int`, `Bool`, `Date`, `DateTime`, `DateTime:Timezone`, `Choice`, `ChoiceList`, `Attachments`, `Any`, `Ref:TABLE`, `RefList:TABLE`.
 
+Par défaut :
+- `Date` est affiché en `DD/MM/YYYY` ;
+- `DateTime` est converti en `DateTime:Europe/Paris` ;
+- `DateTime` est affiché en `DD/MM/YYYY HH:mm` ;
+- un fuseau explicitement fourni dans le type, par exemple `DateTime:UTC`, reste prioritaire.
+
 ### `CHOICES`
 
 | TABLE | COLUMN | VALUE |
@@ -53,11 +59,12 @@ Types supportés : `Text`, `Numeric`, `Int`, `Bool`, `Date`, `DateTime`, `DateTi
 
 Le XLSX est analysé dans le navigateur. Le widget ne transmet pas son contenu à un serveur applicatif. Il demande l'accès complet uniquement parce que la création de tables et colonnes modifie le document.
 
-## Limites v1.0.0
+## Limites actuelles
 
 - ne supprime rien ;
 - ne modifie pas automatiquement une colonne existante ;
-- ne crée pas les vues/pages Grist ;
+- ne crée pas encore les vues/pages Grist ;
+- ne configure pas encore la colonne d'affichage des références ;
 - ne gère pas les ACL ;
 - ne travaille que dans le document où le widget est installé.
 

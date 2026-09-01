@@ -1,0 +1,20 @@
+PROMPT — CONSTRUIRE UN MODÈLE GRIST
+
+Je joins le fichier « modele-construction-grist-a-completer.xlsx ».
+
+À partir de mon besoin métier, complète ce fichier pour définir le document Grist à construire. Respecte strictement les feuilles et les en-têtes existants. Lis en priorité les feuilles LIRE_MOI et INSTRUCTIONS_IA.
+
+Règles importantes :
+- utilise TABLES pour déclarer les tables ;
+- utilise COLUMNS pour déclarer les colonnes, types Grist, références et formules ;
+- utilise CHOICES pour les valeurs Choice et ChoiceList ;
+- utilise des identifiants techniques stables, explicites, sans accents ni espaces ;
+- utilise Ref:TABLE ou RefList:TABLE pour les relations ;
+- n'utilise pas de formules Excel : FORMULA doit contenir uniquement des formules Grist ;
+- vérifie la cohérence de toutes les références et listes de choix ;
+- privilégie une structure normalisée avec des référentiels séparés et des clés stables ;
+- ne modifie ni le nom des feuilles ni les en-têtes attendus ;
+- retourne le fichier XLSX complété.
+
+Mon besoin métier :
+[Décrire ici le besoin]

@@ -25,6 +25,12 @@ Règles du modèle
 - Utilise des clés métier stables quand elles existent.
 - Prévois la structure pour faciliter filtres, vues, tableaux de bord et automatisations futures sans sur-concevoir.
 
+Traçabilité automatique
+Grist Model Builder peut ajouter lui-même, lors de la construction, les quatre colonnes techniques suivantes à chaque table du modèle : CreeLe, CreePar, ModifieLe et ModifiePar.
+- Ne crée pas ces quatre colonnes dans COLUMNS, sauf si l'utilisateur demande explicitement de gérer la traçabilité lui-même dans le modèle.
+- Ne crée pas de doublons équivalents sous d'autres noms comme CreatedAt, UpdatedAt, AuteurCreation ou DerniereModification.
+- Concentre le modèle XLSX sur les données et règles métier ; la traçabilité technique est gérée nativement par le widget.
+
 Contrôle final obligatoire
 Avant de rendre le XLSX, vérifie :
 - que chaque TABLE utilisée dans COLUMNS existe ;
@@ -33,7 +39,8 @@ Avant de rendre le XLSX, vérifie :
 - que chaque Choice/ChoiceList possède ses valeurs dans CHOICES ;
 - que les identifiants sont uniques et valides ;
 - qu'aucune formule Excel n'est présente ;
-- que la structure évite les duplications évidentes et les relations incohérentes.
+- que la structure évite les duplications évidentes et les relations incohérentes ;
+- qu'aucune colonne de traçabilité automatique n'a été ajoutée par erreur si le widget doit s'en charger.
 
 Retour attendu
 Retourne uniquement le fichier XLSX complété, prêt à être importé dans Grist Model Builder.

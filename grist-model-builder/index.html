@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Grist Model Builder</title>
-  <link rel="stylesheet" href="style.css?v=1.1.0">
+  <link rel="stylesheet" href="style.css?v=1.1.1">
+  <link rel="stylesheet" href="traceability.css?v=1.1.1">
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -37,6 +38,26 @@
         <em>Prompt IA → JSON → collage/import → simulation</em>
       </button>
     </div>
+
+    <div class="traceability-options">
+      <div class="trace-row">
+        <input id="traceabilityEnabled" type="checkbox" checked>
+        <div>
+          <strong>✨ Traçabilité automatique — recommandé</strong>
+          <p>Ajoute aux tables du modèle : Créé le, Créé par, Modifié le et Modifié par, avec les Trigger Formulas natives de Grist.</p>
+        </div>
+      </div>
+      <div class="traceability-author">
+        <label for="traceabilityAuthor">Identité enregistrée</label>
+        <select id="traceabilityAuthor">
+          <option value="name" selected>Nom Grist</option>
+          <option value="email">Adresse e-mail</option>
+          <option value="userid">UserID Grist</option>
+        </select>
+        <span id="traceabilityHint" class="traceability-hint"></span>
+      </div>
+    </div>
+
     <div class="export-strip">
       <div><strong>Vous avez déjà un document Grist ?</strong><span>Exportez son schéma actuel pour le documenter ou le faire évoluer.</span></div>
       <div class="button-row">
@@ -123,8 +144,9 @@
     <div id="buildLog" class="build-log" aria-live="polite"></div>
   </section>
 
-  <footer><span>Grist Model Builder · aucun serveur applicatif · traitement local</span><span>v1.1.0</span></footer>
+  <footer><span>Grist Model Builder · aucun serveur applicatif · traitement local</span><span>v1.1.1</span></footer>
 </main>
-<script src="app.js?v=1.1.0"></script>
+<script src="app.js?v=1.1.1"></script>
+<script src="traceability.js?v=1.1.1"></script>
 </body>
 </html>

@@ -4,14 +4,14 @@ Widget Grist autonome pour **concevoir, simuler, construire et exporter le sché
 
 ## Deux parcours guidés
 
-### Débutant — XLSX
+### Débutant - XLSX
 1. Télécharger le modèle XLSX.
 2. Copier le prompt IA dédié.
 3. Faire compléter le classeur par une IA ou manuellement.
 4. Importer le XLSX.
 5. Valider, simuler puis construire.
 
-### Expert — JSON
+### Expert - JSON
 1. Copier le prompt JSON.
 2. Faire générer ou rédiger le JSON.
 3. Coller le JSON ou charger un fichier `.json`.
@@ -30,16 +30,17 @@ Les deux formats sont convertis vers le même modèle interne.
 - simulation avant écriture ;
 - création non destructive : aucune suppression et aucune modification automatique d'une colonne existante différente ;
 - export du schéma Grist courant en XLSX ou JSON ;
-- traçabilité automatique optionnelle et activée par défaut.
+- traçabilité automatique optionnelle et activée par défaut ;
+- confirmation intégrée au widget et message clair en fin de construction.
 
 ## Traçabilité automatique
 
 Le parcours guidé propose par défaut d'ajouter quatre colonnes techniques aux tables du modèle :
 
-- `CreeLe` — libellé **Créé le** — `DateTime:Europe/Paris` — Trigger Formula `NOW()` appliquée uniquement à la création ;
-- `CreePar` — libellé **Créé par** — Trigger Formula `user.Name`, `user.Email` ou `str(user.UserID)` selon l'option choisie ;
-- `ModifieLe` — libellé **Modifié le** — `DateTime:Europe/Paris` — Trigger Formula `NOW()` recalculée lors des modifications manuelles ;
-- `ModifiePar` — libellé **Modifié par** — même choix d'identité, recalculé lors des modifications manuelles.
+- `CreeLe` - libellé **Créé le** - `DateTime:Europe/Paris` - renseigné automatiquement à la création ;
+- `CreePar` - libellé **Créé par** - enregistre le nom, l'adresse e-mail ou le UserID selon l'option choisie ;
+- `ModifieLe` - libellé **Modifié le** - mis à jour automatiquement lors des modifications ;
+- `ModifiePar` - libellé **Modifié par** - enregistre l'auteur de la dernière modification.
 
 La fonctionnalité est non destructive : une colonne existante portant le même identifiant n'est pas remplacée. Les prompts IA demandent explicitement de ne pas recréer ces colonnes lorsque le widget gère la traçabilité.
 
@@ -83,6 +84,10 @@ Feuilles :
 
 Un exemple complet est fourni dans `templates/exemple-modele-grist.json`.
 
+## Export du schéma
+
+Les boutons d'export lisent le document Grist courant et produisent son schéma en XLSX ou JSON. Cet export peut servir à sauvegarder la structure, la documenter ou la faire évoluer avec une IA avant réimport.
+
 ## API Grist
 
 Le widget ne dépend pas de la ligne sélectionnée et n'utilise donc pas `onRecord` / `onRecords`.
@@ -101,6 +106,10 @@ Aucune clé API Grist, aucun backend et aucun accès multi-documents.
 ## Sécurité
 
 Le XLSX/JSON est analysé dans le navigateur. Son contenu n'est pas envoyé à un serveur applicatif par Grist Model Builder.
+
+## Version
+
+1.1.2
 
 ## Licence
 

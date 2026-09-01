@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Grist Model Builder</title>
+  <link rel="stylesheet" href="style.css?v=1.0.2">
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="grist-compat.js?v=1.0.2"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">WIDGET GRIST</p>
+        <h1>Grist Model Builder</h1>
+        <p class="lead">Construisez les tables de votre document depuis un modèle XLSX, rempli manuellement ou avec l’aide d’une IA.</p>
+      </div>
+      <div id="accessBadge" class="status status-wait"><span class="dot"></span><span>Connexion à Grist…</span></div>
+    </header>
+
+    <section class="card steps-card">
+      <div class="step"><span>1</span><div><strong>Téléchargez le modèle</strong><small>Le format attendu est déjà documenté.</small></div></div>
+      <div class="step"><span>2</span><div><strong>Complétez-le</strong><small>Manuellement ou avec le prompt IA fourni.</small></div></div>
+      <div class="step"><span>3</span><div><strong>Analysez puis construisez</strong><small>Le widget simule avant toute modification.</small></div></div>
+    </section>
+
+    <section class="card resource-card">
+      <div class="section-heading">
+        <div><h2>Préparer le modèle</h2><p>Le fichier reste sur votre poste jusqu’à ce que vous lanciez la construction.</p></div>
+      </div>
+      <div class="button-row">
+        <a class="btn btn-secondary" href="templates/modele-construction-grist-a-completer.xlsx" download>Télécharger le modèle XLSX</a>
+        <button id="copyPromptBtn" class="btn btn-secondary" type="button">Copier le prompt IA</button>
+        <a class="btn btn-ghost" href="prompt-ia.txt" download>Télécharger le prompt</a>
+      </div>
+      <details class="prompt-box">
+        <summary>Voir le prompt IA</summary>
+        <pre id="promptText">Chargement…</pre>
+      </details>
+    </section>
+
+    <section class="card upload-card">
+      <div class="section-heading">
+        <div><h2>Charger un modèle XLSX</h2><p>Feuilles obligatoires : <code>TABLES</code> et <code>COLUMNS</code>. <code>CHOICES</code> est facultative.</p></div>
+      </div>
+      <label id="dropZone" class="drop-zone" for="fileInput">
+        <input id="fileInput" type="file" accept=".xlsx,.xls" hidden>
+        <span class="drop-icon">＋</span>
+        <strong>Choisir ou déposer un fichier XLSX</strong>
+        <small id="fileName">Aucun fichier chargé</small>
+      </label>
+      <div class="button-row spaced-top">
+        <button id="analyzeBtn" class="btn btn-primary" type="button" disabled>Analyser le modèle</button>
+        <button id="resetBtn" class="btn btn-ghost" type="button" disabled>Réinitialiser</button>
+      </div>
+      <div id="analysisMessage" class="notice hidden" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="previewSection" class="card hidden">
+      <div class="section-heading split">
+        <div><h2>Aperçu du modèle</h2><p>Vérifiez la structure avant de comparer avec le document courant.</p></div>
+        <div id="modelState" class="status status-ok"><span class="dot"></span><span>Modèle valide</span></div>
+      </div>
+      <div id="metrics" class="metrics"></div>
+      <div id="tablesPreview" class="tables-preview"></div>
+      <div class="button-row spaced-top">
+        <button id="simulateBtn" class="btn btn-primary" type="button">Simuler dans ce document</button>
+      </div>
+    </section>
+
+    <section id="simulationSection" class="card hidden">
+      <div class="section-heading"><div><h2>Simulation</h2><p>Aucune donnée n’est modifiée à cette étape.</p></div></div>
+      <div id="simulationSummary" class="simulation-summary"></div>
+      <div id="simulationDetails" class="tables-preview"></div>
+      <div id="warningBox" class="notice warning hidden"></div>
+      <div class="button-row spaced-top">
+        <button id="buildBtn" class="btn btn-primary" type="button" disabled>Construire dans ce document</button>
+        <button id="resimulateBtn" class="btn btn-secondary" type="button">Relancer la simulation</button>
+      </div>
+    </section>
+
+    <section id="progressSection" class="card hidden">
+      <div class="section-heading"><div><h2>Construction</h2><p id="progressText">Préparation…</p></div></div>
+      <div class="progress"><div id="progressBar"></div></div>
+      <div id="buildLog" class="build-log" aria-live="polite"></div>
+    </section>
+
+    <footer>
+      <span>Grist Model Builder · sans serveur · traitement local du XLSX</span>
+      <span>v1.0.2</span>
+    </footer>
+  </main>
+  <script src="app.js?v=1.0.2"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Grist Model Builder",
+    "description": "Construire les tables d'un document Grist depuis un modèle XLSX compatible IA.",
+    "url": "https://athenor-lnz.github.io/grist-custom-widgets/grist-model-builder/",
+    "widgetId": "grist-model-builder"
+  }
+]

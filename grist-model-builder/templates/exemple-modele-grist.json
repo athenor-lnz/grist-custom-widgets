@@ -1,0 +1,87 @@
+{
+  "settings": {
+    "timezone": "Europe/Paris",
+    "dateFormat": "DD/MM/YYYY",
+    "timeFormat": "HH:mm"
+  },
+  "tables": [
+    {
+      "id": "UNITES",
+      "label": "Unités",
+      "description": "Référentiel des unités"
+    },
+    {
+      "id": "UTILISATEURS",
+      "label": "Utilisateurs",
+      "description": "Utilisateurs rattachés à une unité"
+    }
+  ],
+  "columns": [
+    {
+      "table": "UNITES",
+      "id": "CODE",
+      "label": "Code",
+      "type": "Text",
+      "display": "",
+      "formula": "",
+      "description": "Clé stable"
+    },
+    {
+      "table": "UNITES",
+      "id": "NOM",
+      "label": "Nom",
+      "type": "Text",
+      "display": "",
+      "formula": "",
+      "description": ""
+    },
+    {
+      "table": "UTILISATEURS",
+      "id": "NOM",
+      "label": "Nom",
+      "type": "Text",
+      "display": "",
+      "formula": "",
+      "description": ""
+    },
+    {
+      "table": "UTILISATEURS",
+      "id": "UNITE",
+      "label": "Unité",
+      "type": "Ref:UNITES",
+      "display": "NOM",
+      "formula": "",
+      "description": ""
+    },
+    {
+      "table": "UTILISATEURS",
+      "id": "STATUT",
+      "label": "Statut",
+      "type": "Choice",
+      "display": "",
+      "formula": "",
+      "description": ""
+    },
+    {
+      "table": "UTILISATEURS",
+      "id": "DATE_MAJ",
+      "label": "Mise à jour",
+      "type": "DateTime",
+      "display": "",
+      "formula": "",
+      "description": ""
+    }
+  ],
+  "choices": [
+    {
+      "table": "UTILISATEURS",
+      "column": "STATUT",
+      "value": "Actif"
+    },
+    {
+      "table": "UTILISATEURS",
+      "column": "STATUT",
+      "value": "Inactif"
+    }
+  ]
+}

@@ -8,232 +8,65 @@
   const IDENT = /^[A-Za-z][A-Za-z0-9_]*$/;
   const SIMPLE_TYPES = new Set(['Text','Numeric','Int','Bool','Date','Choice','ChoiceList','Attachments','Any']);
 
-  function escapeHtml(v='') { return String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+  function escapeHtml(v='') { return String(v).replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c])); }
   function show(el, yes=true) { el.classList.toggle('hidden', !yes); }
   function setNotice(text, kind='') { els.analysisMessage.className = `notice ${kind}`.trim(); els.analysisMessage.textContent = text; show(els.analysisMessage, true); }
   function normalizeText(v) { return v == null ? '' : String(v).trim(); }
-  function normalizeType(v) {
-    let t = normalizeText(v);
-    if (t === 'DateTime') return 'DateTime:UTC';
-    return t;
-  }
+  function normalizeType(v) { let t = normalizeText(v); if (t === 'DateTime') return 'DateTime:UTC'; return t; }
   function isValidType(t) { return SIMPLE_TYPES.has(t) || /^DateTime:[^\s]+$/.test(t) || /^Ref(List)?:[A-Za-z][A-Za-z0-9_]*$/.test(t); }
   function getRefTarget(type) { const m = /^(?:Ref|RefList):(.+)$/.exec(type); return m ? m[1] : null; }
 
-  async function loadPrompt() {
-    try { const r = await fetch('prompt-ia.txt'); els.promptText.textContent = await r.text(); }
-    catch { els.promptText.textContent = 'Le prompt est disponible via le bouton Télécharger le prompt.'; }
-  }
+  async function loadPrompt() { try { const r = await fetch('prompt-ia.txt'); els.promptText.textContent = await r.text(); } catch { els.promptText.textContent = 'Le prompt est disponible via le bouton Télécharger le prompt.'; } }
+  async function copyPrompt() { const text = els.promptText.textContent; try { await navigator.clipboard.writeText(text); } catch { const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove(); } els.copyPromptBtn.textContent='Prompt copié ✓';setTimeout(()=>els.copyPromptBtn.textContent='Copier le prompt IA',1800); }
 
-  async function copyPrompt() {
-    const text = els.promptText.textContent;
-    try { await navigator.clipboard.writeText(text); els.copyPromptBtn.textContent = 'Prompt copié ✓'; setTimeout(()=>els.copyPromptBtn.textContent='Copier le prompt IA',1800); }
-    catch {
-      const ta = document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-      els.copyPromptBtn.textContent='Prompt copié ✓'; setTimeout(()=>els.copyPromptBtn.textContent='Copier le prompt IA',1800);
-    }
-  }
-
-  function rowsFromSheet(wb, sheetName) {
-    const ws = wb.Sheets[sheetName];
-    if (!ws) return null;
-    return XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-  }
-
+  function rowsFromSheet(wb, sheetName) { const ws=wb.Sheets[sheetName]; return ws ? XLSX.utils.sheet_to_json(ws,{defval:'',raw:false}) : null; }
   function parseWorkbook(arrayBuffer) {
     if (!window.XLSX) throw new Error('Le moteur XLSX n’a pas pu être chargé. Vérifiez la connexion réseau puis rechargez le widget.');
-    const wb = XLSX.read(arrayBuffer, {type:'array', cellDates:false});
-    const tableRows = rowsFromSheet(wb, 'TABLES');
-    const columnRows = rowsFromSheet(wb, 'COLUMNS');
-    const choiceRows = rowsFromSheet(wb, 'CHOICES') || [];
-    if (!tableRows || !columnRows) throw new Error('Le fichier doit contenir les feuilles TABLES et COLUMNS.');
-
-    const tables = tableRows.map(r => ({id:normalizeText(r.ID), label:normalizeText(r.LABEL), description:normalizeText(r.DESCRIPTION)})).filter(t=>t.id);
-    const columns = columnRows.map(r => ({table:normalizeText(r.TABLE), id:normalizeText(r.ID), label:normalizeText(r.LABEL), type:normalizeType(r.TYPE), formula:normalizeText(r.FORMULA), description:normalizeText(r.DESCRIPTION)})).filter(c=>c.table && c.id);
-    const choices = choiceRows.map(r => ({table:normalizeText(r.TABLE), column:normalizeText(r.COLUMN), value:normalizeText(r.VALUE)})).filter(c=>c.table && c.column && c.value);
-
-    const choiceMap = new Map();
-    for (const c of choices) {
-      const k = `${c.table}::${c.column}`;
-      if (!choiceMap.has(k)) choiceMap.set(k, []);
-      if (!choiceMap.get(k).includes(c.value)) choiceMap.get(k).push(c.value);
-    }
-    for (const c of columns) c.choices = choiceMap.get(`${c.table}::${c.id}`) || [];
-    return {tables, columns, choices};
+    const wb=XLSX.read(arrayBuffer,{type:'array',cellDates:false});
+    const tableRows=rowsFromSheet(wb,'TABLES'), columnRows=rowsFromSheet(wb,'COLUMNS'), choiceRows=rowsFromSheet(wb,'CHOICES')||[];
+    if(!tableRows||!columnRows) throw new Error('Le fichier doit contenir les feuilles TABLES et COLUMNS.');
+    const tables=tableRows.map(r=>({id:normalizeText(r.ID),label:normalizeText(r.LABEL),description:normalizeText(r.DESCRIPTION)})).filter(t=>t.id);
+    const columns=columnRows.map(r=>({table:normalizeText(r.TABLE),id:normalizeText(r.ID),label:normalizeText(r.LABEL),type:normalizeType(r.TYPE),formula:normalizeText(r.FORMULA),description:normalizeText(r.DESCRIPTION)})).filter(c=>c.table&&c.id);
+    const choices=choiceRows.map(r=>({table:normalizeText(r.TABLE),column:normalizeText(r.COLUMN),value:normalizeText(r.VALUE)})).filter(c=>c.table&&c.column&&c.value);
+    const choiceMap=new Map(); for(const c of choices){const k=`${c.table}::${c.column}`;if(!choiceMap.has(k))choiceMap.set(k,[]);if(!choiceMap.get(k).includes(c.value))choiceMap.get(k).push(c.value);} for(const c of columns)c.choices=choiceMap.get(`${c.table}::${c.id}`)||[];
+    return {tables,columns,choices};
   }
 
-  function validateModel(model) {
-    const errors=[], warnings=[];
-    const tableIds = new Set(); const tableLower = new Set();
-    for (const t of model.tables) {
-      if (!IDENT.test(t.id)) errors.push(`Table ${t.id} : identifiant invalide.`);
-      if (tableLower.has(t.id.toLowerCase())) errors.push(`Table ${t.id} : identifiant dupliqué.`);
-      tableIds.add(t.id); tableLower.add(t.id.toLowerCase());
-    }
-    if (!model.tables.length) errors.push('Aucune table déclarée.');
-    const colsByTable = new Map();
-    for (const c of model.columns) {
-      if (!tableIds.has(c.table)) errors.push(`Colonne ${c.table}.${c.id} : table non déclarée.`);
-      if (!IDENT.test(c.id) || ['id','manualSort'].includes(c.id)) errors.push(`Colonne ${c.table}.${c.id} : identifiant invalide ou réservé.`);
-      if (!isValidType(c.type)) errors.push(`Colonne ${c.table}.${c.id} : type Grist non reconnu (${c.type}).`);
-      const rt=getRefTarget(c.type); if (rt && !tableIds.has(rt)) errors.push(`Colonne ${c.table}.${c.id} : référence vers ${rt}, table absente du modèle.`);
-      const key=c.table; if(!colsByTable.has(key)) colsByTable.set(key,new Set());
-      const lower=c.id.toLowerCase(); if(colsByTable.get(key).has(lower)) errors.push(`Colonne ${c.table}.${c.id} : identifiant dupliqué.`); colsByTable.get(key).add(lower);
-      if ((c.type==='Choice'||c.type==='ChoiceList') && !c.choices.length) warnings.push(`${c.table}.${c.id} : aucune valeur dans CHOICES.`);
-      if (c.choices.length && !['Choice','ChoiceList'].includes(c.type)) warnings.push(`${c.table}.${c.id} : valeurs CHOICES ignorées car le type est ${c.type}.`);
-    }
+  function validateModel(model){
+    const errors=[],warnings=[],tableIds=new Set(),tableLower=new Set(),colsByTable=new Map();
+    for(const t of model.tables){if(!IDENT.test(t.id))errors.push(`Table ${t.id} : identifiant invalide.`);if(tableLower.has(t.id.toLowerCase()))errors.push(`Table ${t.id} : identifiant dupliqué.`);tableIds.add(t.id);tableLower.add(t.id.toLowerCase());}
+    if(!model.tables.length)errors.push('Aucune table déclarée.');
+    for(const c of model.columns){if(!tableIds.has(c.table))errors.push(`Colonne ${c.table}.${c.id} : table non déclarée.`);if(!IDENT.test(c.id)||['id','manualSort'].includes(c.id))errors.push(`Colonne ${c.table}.${c.id} : identifiant invalide ou réservé.`);if(!isValidType(c.type))errors.push(`Colonne ${c.table}.${c.id} : type Grist non reconnu (${c.type}).`);const rt=getRefTarget(c.type);if(rt&&!tableIds.has(rt))errors.push(`Colonne ${c.table}.${c.id} : référence vers ${rt}, table absente du modèle.`);if(!colsByTable.has(c.table))colsByTable.set(c.table,new Set());const lower=c.id.toLowerCase();if(colsByTable.get(c.table).has(lower))errors.push(`Colonne ${c.table}.${c.id} : identifiant dupliqué.`);colsByTable.get(c.table).add(lower);if(['Choice','ChoiceList'].includes(c.type)&&!c.choices.length)warnings.push(`${c.table}.${c.id} : aucune valeur dans CHOICES.`);if(c.choices.length&&!['Choice','ChoiceList'].includes(c.type))warnings.push(`${c.table}.${c.id} : valeurs CHOICES ignorées car le type est ${c.type}.`);}
     return {errors,warnings};
   }
 
-  function topologicalTables(model) {
-    const deps = new Map(model.tables.map(t=>[t.id,new Set()]));
-    for(const c of model.columns){ const rt=getRefTarget(c.type); if(rt && rt!==c.table) deps.get(c.table)?.add(rt); }
-    const result=[], visiting=new Set(), done=new Set();
-    function visit(id){ if(done.has(id))return; if(visiting.has(id)) return; visiting.add(id); for(const d of deps.get(id)||[]) visit(d); visiting.delete(id); done.add(id); result.push(id); }
-    for(const t of model.tables) visit(t.id); return result;
-  }
+  function topologicalTables(model){const deps=new Map(model.tables.map(t=>[t.id,new Set()]));for(const c of model.columns){const rt=getRefTarget(c.type);if(rt&&rt!==c.table)deps.get(c.table)?.add(rt);}const result=[],visiting=new Set(),done=new Set();function visit(id){if(done.has(id)||visiting.has(id))return;visiting.add(id);for(const d of deps.get(id)||[])visit(d);visiting.delete(id);done.add(id);result.push(id);}for(const t of model.tables)visit(t.id);return result;}
 
-  function renderPreview() {
-    const m=state.model;
-    const refs=m.columns.filter(c=>getRefTarget(c.type)).length;
-    const formulas=m.columns.filter(c=>c.formula).length;
-    const choiceCols=m.columns.filter(c=>['Choice','ChoiceList'].includes(c.type)).length;
-    els.metrics.innerHTML = [['Tables',m.tables.length],['Colonnes',m.columns.length],['Références',refs],['Listes de choix',choiceCols],['Formules',formulas]].map(([label,val])=>`<div class="metric"><strong>${val}</strong><span>${label}</span></div>`).join('');
-    els.tablesPreview.innerHTML = m.tables.map(t=>{
-      const cols=m.columns.filter(c=>c.table===t.id);
-      return `<div class="table-block"><div class="table-title"><strong>${escapeHtml(t.label||t.id)}</strong><span>${escapeHtml(t.id)} · ${cols.length} colonnes</span></div><div class="table-scroll"><table><thead><tr><th>ID</th><th>Libellé</th><th>Type</th><th>Choix</th><th>Formule</th></tr></thead><tbody>${cols.map(c=>`<tr><td><code>${escapeHtml(c.id)}</code></td><td>${escapeHtml(c.label||'—')}</td><td><code>${escapeHtml(c.type)}</code></td><td>${c.choices.length?escapeHtml(c.choices.join(', ')):'—'}</td><td>${c.formula?`<code>${escapeHtml(c.formula)}</code>`:'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
-    }).join('');
-    show(els.previewSection,true);
-  }
+  function renderPreview(){const m=state.model,refs=m.columns.filter(c=>getRefTarget(c.type)).length,formulas=m.columns.filter(c=>c.formula).length,choiceCols=m.columns.filter(c=>['Choice','ChoiceList'].includes(c.type)).length;els.metrics.innerHTML=[['Tables',m.tables.length],['Colonnes',m.columns.length],['Références',refs],['Listes de choix',choiceCols],['Formules',formulas]].map(([label,val])=>`<div class="metric"><strong>${val}</strong><span>${label}</span></div>`).join('');els.tablesPreview.innerHTML=m.tables.map(t=>{const cols=m.columns.filter(c=>c.table===t.id);return `<div class="table-block"><div class="table-title"><strong>${escapeHtml(t.label||t.id)}</strong><span>${escapeHtml(t.id)} · ${cols.length} colonnes</span></div><div class="table-scroll"><table><thead><tr><th>ID</th><th>Libellé</th><th>Type</th><th>Choix</th><th>Formule</th></tr></thead><tbody>${cols.map(c=>`<tr><td><code>${escapeHtml(c.id)}</code></td><td>${escapeHtml(c.label||'—')}</td><td><code>${escapeHtml(c.type)}</code></td><td>${c.choices.length?escapeHtml(c.choices.join(', ')):'—'}</td><td>${c.formula?`<code>${escapeHtml(c.formula)}</code>`:'—'}</td></tr>`).join('')}</tbody></table></div></div>`;}).join('');show(els.previewSection,true);}
 
-  function tableDataToRows(data) {
-    if (Array.isArray(data)) return data;
-    if (!data || typeof data !== 'object') return [];
-    const keys=Object.keys(data).filter(k=>Array.isArray(data[k]));
-    if(!keys.length) return [];
-    const length=Math.max(...keys.map(k=>data[k].length));
-    return Array.from({length},(_,i)=>Object.fromEntries(keys.map(k=>[k,data[k][i]])));
-  }
+  function tableDataToRows(data){if(Array.isArray(data))return data;if(!data||typeof data!=='object')return[];const keys=Object.keys(data).filter(k=>Array.isArray(data[k]));if(!keys.length)return[];const length=Math.max(...keys.map(k=>data[k].length));return Array.from({length},(_,i)=>Object.fromEntries(keys.map(k=>[k,data[k][i]])));}
+  async function fetchSchema(){const tableIds=await grist.docApi.listTables();const metaTables=tableDataToRows(await grist.docApi.fetchTable('_grist_Tables'));const metaCols=tableDataToRows(await grist.docApi.fetchTable('_grist_Tables_column'));const tableIdByRef=new Map(metaTables.map(r=>[r.id,r.tableId]));const columnsByTable=new Map();for(const tid of tableIds)columnsByTable.set(tid,new Map());for(const c of metaCols){const tid=tableIdByRef.get(c.parentId);if(tid&&columnsByTable.has(tid))columnsByTable.get(tid).set(c.colId,c);}return{tableIds:new Set(tableIds),tableIdByRef,columnsByTable};}
 
-  async function fetchSchema() {
-    const tableIds = await grist.docApi.listTables();
-    const metaTables = tableDataToRows(await grist.docApi.fetchTable('_grist_Tables'));
-    const metaCols = tableDataToRows(await grist.docApi.fetchTable('_grist_Tables_column'));
-    const tableIdByRef = new Map(metaTables.map(r=>[r.id,r.tableId]));
-    const columnsByTable = new Map();
-    for(const tid of tableIds) columnsByTable.set(tid,new Map());
-    for(const c of metaCols){
-      const tid=tableIdByRef.get(c.parentId);
-      if(tid && columnsByTable.has(tid)) columnsByTable.get(tid).set(c.colId,c);
-    }
-    return {tableIds:new Set(tableIds),tableIdByRef,columnsByTable};
-  }
+  async function simulate(){if(!state.model)return;els.simulateBtn.disabled=true;els.simulateBtn.textContent='Simulation…';try{const schema=await fetchSchema();let newTables=0,newColumns=0,mismatches=0;const details=[];for(const t of state.model.tables){const exists=schema.tableIds.has(t.id);if(!exists)newTables++;const colDetails=[];for(const c of state.model.columns.filter(x=>x.table===t.id)){const ex=schema.columnsByTable.get(t.id)?.get(c.id);if(!ex){newColumns++;colDetails.push({c,status:'add',message:'À créer'});}else{const formulaMismatch=Boolean(c.formula)!==Boolean(ex.isFormula)||(c.formula&&c.formula!==ex.formula);if(ex.type!==c.type||formulaMismatch){mismatches++;colDetails.push({c,status:'warn',message:`Existe : ${ex.type}${formulaMismatch?' · formule différente':''}`});}else colDetails.push({c,status:'same',message:'Déjà conforme'});}}details.push({t,exists,colDetails});}state.simulation={schema,newTables,newColumns,mismatches,details};renderSimulation();}catch(e){setNotice(`Simulation impossible : ${e.message}`,'error');}finally{els.simulateBtn.disabled=false;els.simulateBtn.textContent='Simuler dans ce document';}}
 
-  async function simulate() {
-    if (!state.model) return;
-    els.simulateBtn.disabled=true; els.simulateBtn.textContent='Simulation…';
-    try {
-      const schema=await fetchSchema();
-      let newTables=0,newColumns=0,mismatches=0;
-      const details=[];
-      for(const t of state.model.tables){
-        const exists=schema.tableIds.has(t.id); if(!exists)newTables++;
-        const colDetails=[];
-        for(const c of state.model.columns.filter(x=>x.table===t.id)){
-          const ex=schema.columnsByTable.get(t.id)?.get(c.id);
-          if(!ex){newColumns++; colDetails.push({c,status:'add',message:'À créer'});}
-          else {
-            const expected=c.type; const actual=ex.type;
-            const formulaMismatch=Boolean(c.formula)!==Boolean(ex.isFormula) || (c.formula && c.formula!==ex.formula);
-            if(actual!==expected || formulaMismatch){mismatches++; colDetails.push({c,status:'warn',message:`Existe : ${actual}${formulaMismatch?' · formule différente':''}`});}
-            else colDetails.push({c,status:'same',message:'Déjà conforme'});
-          }
-        }
-        details.push({t,exists,colDetails});
-      }
-      state.simulation={schema,newTables,newColumns,mismatches,details};
-      renderSimulation();
-    } catch(e){ setNotice(`Simulation impossible : ${e.message}`,'error'); }
-    finally{els.simulateBtn.disabled=false;els.simulateBtn.textContent='Simuler dans ce document';}
-  }
+  function renderSimulation(){const s=state.simulation;els.simulationSummary.innerHTML=`<div class="sim-box"><strong>${s.newTables}</strong> tables à créer</div><div class="sim-box"><strong>${s.newColumns}</strong> colonnes à créer</div><div class="sim-box"><strong>${s.mismatches}</strong> différences existantes</div>`;els.simulationDetails.innerHTML=s.details.map(d=>`<div class="table-block"><div class="table-title"><strong>${escapeHtml(d.t.label||d.t.id)}</strong><span class="pill ${d.exists?'same':'add'}">${d.exists?'Table existante':'Table à créer'}</span></div><div class="table-scroll"><table><thead><tr><th>Colonne</th><th>Type attendu</th><th>Action</th></tr></thead><tbody>${d.colDetails.map(x=>`<tr><td><code>${escapeHtml(x.c.id)}</code></td><td><code>${escapeHtml(x.c.type)}</code></td><td><span class="pill ${x.status}">${escapeHtml(x.message)}</span></td></tr>`).join('')}</tbody></table></div></div>`).join('');if(s.mismatches){els.warningBox.textContent='Certaines colonnes existantes ont un type ou une formule différents. Elles ne seront pas modifiées automatiquement.';show(els.warningBox,true);}else show(els.warningBox,false);els.buildBtn.disabled=(s.newTables===0&&s.newColumns===0);els.buildBtn.title=els.buildBtn.disabled?'Aucun élément manquant à construire.':'';show(els.simulationSection,true);els.simulationSection.scrollIntoView({behavior:'smooth',block:'start'});}
 
-  function renderSimulation(){
-    const s=state.simulation;
-    els.simulationSummary.innerHTML=`<div class="sim-box"><strong>${s.newTables}</strong> tables à créer</div><div class="sim-box"><strong>${s.newColumns}</strong> colonnes à créer</div><div class="sim-box"><strong>${s.mismatches}</strong> différences existantes</div>`;
-    els.simulationDetails.innerHTML=s.details.map(d=>`<div class="table-block"><div class="table-title"><strong>${escapeHtml(d.t.label||d.t.id)}</strong><span class="pill ${d.exists?'same':'add'}">${d.exists?'Table existante':'Table à créer'}</span></div><div class="table-scroll"><table><thead><tr><th>Colonne</th><th>Type attendu</th><th>Action</th></tr></thead><tbody>${d.colDetails.map(x=>`<tr><td><code>${escapeHtml(x.c.id)}</code></td><td><code>${escapeHtml(x.c.type)}</code></td><td><span class="pill ${x.status}">${escapeHtml(x.message)}</span></td></tr>`).join('')}</tbody></table></div></div>`).join('');
-    if(s.mismatches){els.warningBox.textContent='Certaines colonnes existantes ont un type ou une formule différents. La version 1.0 ne modifie jamais automatiquement une colonne existante : elle crée uniquement les tables et colonnes manquantes.';show(els.warningBox,true);}else show(els.warningBox,false);
-    els.buildBtn.disabled = state.access!=='full' || (s.newTables===0 && s.newColumns===0);
-    els.buildBtn.title = state.access!=='full'?'Accordez au widget l’accès complet au document pour construire le modèle.':'';
-    show(els.simulationSection,true); els.simulationSection.scrollIntoView({behavior:'smooth',block:'start'});
-  }
+  function colActionInfo(c){return{id:c.id,type:c.type,isFormula:Boolean(c.formula),formula:c.formula||''};}
+  function widgetOptionsFor(c){return c.choices?.length?JSON.stringify({choices:c.choices}):'';}
+  async function updateColumnMetadata(tableId,modelColumns){const mt=tableDataToRows(await grist.docApi.fetchTable('_grist_Tables'));const mc=tableDataToRows(await grist.docApi.fetchTable('_grist_Tables_column'));const tr=mt.find(r=>r.tableId===tableId)?.id;if(!tr)return;const wanted=new Map(modelColumns.map(c=>[c.id,c]));const rows=mc.filter(r=>r.parentId===tr&&wanted.has(r.colId));if(!rows.length)return;const ids=[],labels=[],descs=[],untied=[],opts=[];for(const r of rows){const c=wanted.get(r.colId);ids.push(r.id);labels.push(c.label||c.id);descs.push(c.description||'');untied.push(true);opts.push(widgetOptionsFor(c)||r.widgetOptions||'');}await grist.docApi.applyUserActions([['BulkUpdateRecord','_grist_Tables_column',ids,{label:labels,description:descs,untieColIdFromLabel:untied,widgetOptions:opts}]]);}
 
-  function colActionInfo(c){ return {id:c.id,type:c.type,isFormula:Boolean(c.formula),formula:c.formula||''}; }
-  function widgetOptionsFor(c){ return c.choices?.length ? JSON.stringify({choices:c.choices}) : ''; }
+  async function build(){if(!state.simulation)return;if(!confirm('Construire les tables et colonnes manquantes dans ce document ? Les colonnes existantes ne seront pas modifiées.'))return;show(els.progressSection,true);els.buildLog.innerHTML='';els.buildBtn.disabled=true;const ordered=topologicalTables(state.model);let done=0;const total=ordered.length;const log=(msg,kind='')=>{const d=document.createElement('div');d.className=kind?`log-${kind}`:'';d.textContent=msg;els.buildLog.appendChild(d);els.buildLog.scrollTop=els.buildLog.scrollHeight;};try{let schema=await fetchSchema();for(const tableId of ordered){const t=state.model.tables.find(x=>x.id===tableId),cols=state.model.columns.filter(c=>c.table===tableId);els.progressText.textContent=`Traitement de ${t.label||tableId}…`;let createdColumns=[];if(!schema.tableIds.has(tableId)){await grist.docApi.applyUserActions([['AddTable',tableId,cols.map(colActionInfo)]]);createdColumns=cols;log(`✓ Table ${tableId} créée avec ${cols.length} colonnes.`,'ok');}else{const existing=schema.columnsByTable.get(tableId)||new Map();for(const c of cols){if(!existing.has(c.id)){await grist.docApi.applyUserActions([['AddColumn',tableId,c.id,{type:c.type,isFormula:Boolean(c.formula),formula:c.formula||''}]]);createdColumns.push(c);log(`✓ Colonne ${tableId}.${c.id} créée.`,'ok');}}}if(createdColumns.length)await updateColumnMetadata(tableId,createdColumns);done++;els.progressBar.style.width=`${Math.round(done/total*100)}%`;schema=await fetchSchema();}els.progressText.textContent='Construction terminée.';log('Construction terminée. Relancez une simulation pour vérifier le résultat.','ok');setNotice('Le modèle a été appliqué au document.','success');await simulate();}catch(e){els.progressText.textContent='Erreur pendant la construction.';log(`Erreur : ${e.message}`,'error');setNotice(`Construction interrompue : ${e.message}`,'error');}finally{if(state.simulation)els.buildBtn.disabled=(state.simulation.newTables===0&&state.simulation.newColumns===0);}}
 
-  async function updateColumnMetadata(tableId, modelColumns){
-    const mt=tableDataToRows(await grist.docApi.fetchTable('_grist_Tables'));
-    const mc=tableDataToRows(await grist.docApi.fetchTable('_grist_Tables_column'));
-    const tr=mt.find(r=>r.tableId===tableId)?.id; if(!tr)return;
-    const wanted=new Map(modelColumns.map(c=>[c.id,c]));
-    const rows=mc.filter(r=>r.parentId===tr && wanted.has(r.colId));
-    if(!rows.length)return;
-    const ids=[],labels=[],descs=[],untied=[],opts=[];
-    for(const r of rows){const c=wanted.get(r.colId);ids.push(r.id);labels.push(c.label||c.id);descs.push(c.description||'');untied.push(true);opts.push(widgetOptionsFor(c)||r.widgetOptions||'');}
-    await grist.docApi.applyUserActions([['BulkUpdateRecord','_grist_Tables_column',ids,{label:labels,description:descs,untieColIdFromLabel:untied,widgetOptions:opts}]]);
-  }
-
-  async function build() {
-    if(!state.simulation || state.access!=='full') return;
-    if(!confirm('Construire les tables et colonnes manquantes dans ce document ? Les colonnes existantes ne seront pas modifiées.')) return;
-    show(els.progressSection,true); els.buildLog.innerHTML=''; els.buildBtn.disabled=true;
-    const ordered=topologicalTables(state.model); let done=0; const total=ordered.length;
-    const log=(msg,kind='')=>{const d=document.createElement('div');d.className=kind?`log-${kind}`:'';d.textContent=msg;els.buildLog.appendChild(d);els.buildLog.scrollTop=els.buildLog.scrollHeight;};
-    try{
-      let schema=await fetchSchema();
-      for(const tableId of ordered){
-        const t=state.model.tables.find(x=>x.id===tableId); const cols=state.model.columns.filter(c=>c.table===tableId);
-        els.progressText.textContent=`Traitement de ${t.label||tableId}…`;
-        let createdColumns=[];
-        if(!schema.tableIds.has(tableId)){
-          await grist.docApi.applyUserActions([['AddTable',tableId,cols.map(colActionInfo)]]);
-          createdColumns=cols;
-          log(`✓ Table ${tableId} créée avec ${cols.length} colonnes.`,'ok');
-        } else {
-          const existing=schema.columnsByTable.get(tableId)||new Map();
-          for(const c of cols){
-            if(!existing.has(c.id)){
-              await grist.docApi.applyUserActions([['AddColumn',tableId,c.id,{type:c.type,isFormula:Boolean(c.formula),formula:c.formula||''}]]);
-              createdColumns.push(c);
-              log(`✓ Colonne ${tableId}.${c.id} créée.`,'ok');
-            }
-          }
-        }
-        if(createdColumns.length) await updateColumnMetadata(tableId,createdColumns);
-        done++; els.progressBar.style.width=`${Math.round(done/total*100)}%`; schema=await fetchSchema();
-      }
-      els.progressText.textContent='Construction terminée.'; log('Construction terminée. Relancez une simulation pour vérifier le résultat.','ok'); setNotice('Le modèle a été appliqué au document.','success');
-      await simulate();
-    }catch(e){els.progressText.textContent='Erreur pendant la construction.';log(`Erreur : ${e.message}`,'error');setNotice(`Construction interrompue : ${e.message}`,'error');}
-    finally{els.buildBtn.disabled=false;}
-  }
-
-  async function analyze(){
-    if(!state.file)return; els.analyzeBtn.disabled=true;els.analyzeBtn.textContent='Analyse…';
-    try{const buf=await state.file.arrayBuffer();const model=parseWorkbook(buf);const validation=validateModel(model);state.model=model;state.validation=validation;
-      if(validation.errors.length){setNotice(`Modèle invalide : ${validation.errors.join(' | ')}`,'error');show(els.previewSection,false);return;}
-      setNotice(validation.warnings.length?`Modèle valide avec ${validation.warnings.length} avertissement(s).`:'Modèle valide.','success');renderPreview();
-      if(validation.warnings.length){els.modelState.className='status';els.modelState.innerHTML='<span class="dot"></span><span>Valide avec avertissements</span>';}else{els.modelState.className='status status-ok';els.modelState.innerHTML='<span class="dot"></span><span>Modèle valide</span>';}
-    }catch(e){setNotice(`Impossible d’analyser le fichier : ${e.message}`,'error');show(els.previewSection,false);}finally{els.analyzeBtn.disabled=false;els.analyzeBtn.textContent='Analyser le modèle';}
-  }
+  async function analyze(){if(!state.file)return;els.analyzeBtn.disabled=true;els.analyzeBtn.textContent='Analyse…';try{const model=parseWorkbook(await state.file.arrayBuffer()),validation=validateModel(model);state.model=model;state.validation=validation;if(validation.errors.length){setNotice(`Modèle invalide : ${validation.errors.join(' | ')}`,'error');show(els.previewSection,false);return;}setNotice(validation.warnings.length?`Modèle valide avec ${validation.warnings.length} avertissement(s).`:'Modèle valide.','success');renderPreview();if(validation.warnings.length){els.modelState.className='status';els.modelState.innerHTML='<span class="dot"></span><span>Valide avec avertissements</span>';}else{els.modelState.className='status status-ok';els.modelState.innerHTML='<span class="dot"></span><span>Modèle valide</span>';}}catch(e){setNotice(`Impossible d’analyser le fichier : ${e.message}`,'error');show(els.previewSection,false);}finally{els.analyzeBtn.disabled=false;els.analyzeBtn.textContent='Analyser le modèle';}}
 
   function setFile(file){state.file=file||null;els.fileName.textContent=file?`${file.name} · ${Math.round(file.size/1024)} Ko`:'Aucun fichier chargé';els.analyzeBtn.disabled=!file;els.resetBtn.disabled=!file;show(els.analysisMessage,false);show(els.previewSection,false);show(els.simulationSection,false);show(els.progressSection,false);}
   function reset(){state.file=null;state.model=null;state.validation=null;state.simulation=null;els.fileInput.value='';setFile(null);}
-  function setAccess(level){state.access=level||'none'; if(level==='full'){els.accessBadge.className='status status-ok';els.accessBadge.innerHTML='<span class="dot"></span><span>Accès complet au document</span>';}else{els.accessBadge.className='status status-error';els.accessBadge.innerHTML='<span class="dot"></span><span>Accès complet requis</span>';} if(state.simulation) renderSimulation();}
+  function setAccess(level){state.access=level||'none';if(level==='full'){els.accessBadge.className='status status-ok';els.accessBadge.innerHTML='<span class="dot"></span><span>Accès complet au document</span>';}else{els.accessBadge.className='status status-wait';els.accessBadge.innerHTML='<span class="dot"></span><span>Accès demandé à Grist</span>';}}
 
-  els.copyPromptBtn.addEventListener('click',copyPrompt); els.fileInput.addEventListener('change',e=>setFile(e.target.files[0])); els.analyzeBtn.addEventListener('click',analyze); els.resetBtn.addEventListener('click',reset); els.simulateBtn.addEventListener('click',simulate); els.resimulateBtn.addEventListener('click',simulate); els.buildBtn.addEventListener('click',build);
-  ['dragenter','dragover'].forEach(ev=>els.dropZone.addEventListener(ev,e=>{e.preventDefault();els.dropZone.classList.add('drag')})); ['dragleave','drop'].forEach(ev=>els.dropZone.addEventListener(ev,e=>{e.preventDefault();els.dropZone.classList.remove('drag')})); els.dropZone.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)setFile(f)});
+  els.copyPromptBtn.addEventListener('click',copyPrompt);els.fileInput.addEventListener('change',e=>setFile(e.target.files[0]));els.analyzeBtn.addEventListener('click',analyze);els.resetBtn.addEventListener('click',reset);els.simulateBtn.addEventListener('click',simulate);els.resimulateBtn.addEventListener('click',simulate);els.buildBtn.addEventListener('click',build);
+  ['dragenter','dragover'].forEach(ev=>els.dropZone.addEventListener(ev,e=>{e.preventDefault();els.dropZone.classList.add('drag')}));['dragleave','drop'].forEach(ev=>els.dropZone.addEventListener(ev,e=>{e.preventDefault();els.dropZone.classList.remove('drag')}));els.dropZone.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)setFile(f)});
 
   loadPrompt();
-  grist.onOptions((_options,interaction)=>setAccess(interaction?.access_level||'none'));
+  grist.onOptions((_options,interaction)=>setAccess(interaction?.accessLevel||interaction?.access_level||'none'));
   grist.ready({requiredAccess:'full'});
 })();

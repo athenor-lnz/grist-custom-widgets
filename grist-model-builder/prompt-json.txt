@@ -63,5 +63,11 @@ Règles
 - Préfère une table référentielle à Choice quand les valeurs ont des attributs propres, évoluent souvent ou doivent être réutilisées.
 - Vérifie toutes les relations, DISPLAY, choix, identifiants et formules avant de répondre.
 
+Traçabilité automatique
+Grist Model Builder peut ajouter lui-même à chaque table du modèle les colonnes techniques CreeLe, CreePar, ModifieLe et ModifiePar avec les Trigger Formulas natives de Grist.
+- Ne crée pas ces quatre colonnes dans le JSON, sauf demande explicite de l'utilisateur.
+- Ne crée pas d'équivalents sous d'autres noms comme CreatedAt, UpdatedAt, AuteurCreation ou DerniereModification.
+- Concentre le JSON sur le schéma métier ; la traçabilité technique est gérée par le widget.
+
 Mon besoin métier :
 [Décrire ici le besoin, les utilisateurs, les données à suivre, les règles importantes et les résultats attendus]

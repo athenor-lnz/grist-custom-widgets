@@ -1,73 +1,95 @@
 # Grist Model Builder
 
-Widget Grist autonome permettant de construire les **tables et colonnes du document courant** à partir d'un modèle XLSX standardisé.
+Widget Grist autonome pour **concevoir, simuler, construire et exporter le schéma du document courant**.
 
-## Fonctionnement
+## Deux parcours guidés
 
-- téléchargez le modèle XLSX ;
-- complétez-le manuellement ou avec l'aide du prompt IA fourni ;
-- importez le fichier dans le widget ;
-- validez la structure ;
-- simulez les changements ;
-- créez uniquement les tables et colonnes manquantes.
+### Débutant — XLSX
+1. Télécharger le modèle XLSX.
+2. Copier le prompt IA dédié.
+3. Faire compléter le classeur par une IA ou manuellement.
+4. Importer le XLSX.
+5. Valider, simuler puis construire.
 
-Aucune clé API, aucun serveur et aucun accès multi-documents ne sont nécessaires. Le widget utilise l'API officielle des widgets Grist avec **Full document access**.
+### Expert — JSON
+1. Copier le prompt JSON.
+2. Faire générer ou rédiger le JSON.
+3. Coller le JSON ou charger un fichier `.json`.
+4. Valider, simuler puis construire.
 
-## Pourquoi pas `onRecord` / `onRecords` ?
+Les deux formats sont convertis vers le même modèle interne.
 
-Ce widget ne dépend pas de la ligne sélectionnée. Il agit sur le **schéma complet du document**. Il utilise donc `grist.ready({requiredAccess: 'full'})`, `grist.onOptions`, `grist.docApi.listTables`, `fetchTable` et `applyUserActions`.
+## Fonctionnalités
 
-## URL du widget
+- tables, colonnes et types Grist ;
+- `Ref:` et `RefList:` ;
+- `DISPLAY` pour choisir la colonne affichée d'une référence ;
+- `Choice` et `ChoiceList` ;
+- formules Grist ;
+- paramètres de date/fuseau ;
+- simulation avant écriture ;
+- création non destructive : aucune suppression et aucune modification automatique d'une colonne existante différente ;
+- export du schéma Grist courant en XLSX ou JSON.
 
-Une fois GitHub Pages activé sur ce dépôt :
+## Paramètres français par défaut
 
-`https://athenor-lnz.github.io/grist-custom-widgets/grist-model-builder/`
+- `timezone`: `Europe/Paris`
+- `dateFormat`: `DD/MM/YYYY`
+- `timeFormat`: `HH:mm`
 
-Dans Grist : **Ajouter un widget → Personnalisé → URL personnalisée** puis collez cette URL et autorisez l'accès complet au document.
+Un type `DateTime` sans fuseau explicite devient `DateTime:Europe/Paris`. Un type explicite comme `DateTime:UTC` reste inchangé.
 
 ## Format XLSX
 
-### `TABLES`
+Feuilles :
+- `TABLES`
+- `COLUMNS`
+- `CHOICES`
+- `SETTINGS`
+- `LIRE_MOI`
+- `INSTRUCTIONS_IA`
 
-| ID | LABEL | DESCRIPTION |
-|---|---|---|
-| UNITES | Unités | Référentiel des unités |
+`COLUMNS` contient :
+`TABLE | ID | LABEL | TYPE | DISPLAY | FORMULA | DESCRIPTION`
 
-### `COLUMNS`
+`DISPLAY` est facultatif et réservé aux colonnes `Ref:` / `RefList:`. Il contient l'identifiant de la colonne à afficher dans la table cible.
 
-| TABLE | ID | LABEL | TYPE | FORMULA | DESCRIPTION |
-|---|---|---|---|---|---|
-| UNITES | NOM | Nom | Text | | |
-| UTILISATEURS | UNITE | Unité | Ref:UNITES | | |
+## Format JSON
 
-Types supportés : `Text`, `Numeric`, `Int`, `Bool`, `Date`, `DateTime`, `DateTime:Timezone`, `Choice`, `ChoiceList`, `Attachments`, `Any`, `Ref:TABLE`, `RefList:TABLE`.
+```json
+{
+  "settings": {
+    "timezone": "Europe/Paris",
+    "dateFormat": "DD/MM/YYYY",
+    "timeFormat": "HH:mm"
+  },
+  "tables": [],
+  "columns": [],
+  "choices": []
+}
+```
 
-Par défaut :
-- `Date` est affiché en `DD/MM/YYYY` ;
-- `DateTime` est converti en `DateTime:Europe/Paris` ;
-- `DateTime` est affiché en `DD/MM/YYYY HH:mm` ;
-- un fuseau explicitement fourni dans le type, par exemple `DateTime:UTC`, reste prioritaire.
+Un exemple complet est fourni dans `templates/exemple-modele-grist.json`.
 
-### `CHOICES`
+## API Grist
 
-| TABLE | COLUMN | VALUE |
-|---|---|---|
-| UTILISATEURS | DROITS | Lecture |
-| UTILISATEURS | DROITS | Modification |
+Le widget ne dépend pas de la ligne sélectionnée et n'utilise donc pas `onRecord` / `onRecords`.
+Il agit sur le schéma complet du document via :
+- `grist.ready({requiredAccess: 'full'})`
+- `grist.docApi.listTables()`
+- `grist.docApi.fetchTable()`
+- `grist.docApi.applyUserActions()`
+
+Aucune clé API Grist, aucun backend et aucun accès multi-documents.
+
+## URL
+
+`https://athenor-lnz.github.io/grist-custom-widgets/grist-model-builder/`
 
 ## Sécurité
 
-Le XLSX est analysé dans le navigateur. Le widget ne transmet pas son contenu à un serveur applicatif. Il demande l'accès complet uniquement parce que la création de tables et colonnes modifie le document.
-
-## Limites actuelles
-
-- ne supprime rien ;
-- ne modifie pas automatiquement une colonne existante ;
-- ne crée pas encore les vues/pages Grist ;
-- ne configure pas encore la colonne d'affichage des références ;
-- ne gère pas les ACL ;
-- ne travaille que dans le document où le widget est installé.
+Le XLSX/JSON est analysé dans le navigateur. Son contenu n'est pas envoyé à un serveur applicatif par Grist Model Builder.
 
 ## Licence
 
-MIT pour le code du widget. SheetJS CE est utilisé pour lire les fichiers XLSX.
+MIT.

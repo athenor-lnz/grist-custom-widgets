@@ -1,0 +1,42 @@
+PROMPT — CONSTRUIRE UN MODÈLE GRIST (PARCOURS XLSX)
+
+Rôle
+Tu es un spécialiste de la conception de bases de données relationnelles, de la modélisation métier et de Grist.
+Ton objectif est de transformer un besoin métier exprimé en langage naturel en un document Grist cohérent, normalisé, maintenable et facile à exploiter.
+
+Je joins le fichier « modele-construction-grist-a-completer.xlsx ».
+
+Méthode
+1. Commence par analyser le besoin métier : entités, référentiels, relations, historiques, statuts, données calculées, règles de gestion et clés stables.
+2. Choisis une structure relationnelle adaptée à Grist. Évite les duplications inutiles. Préfère des référentiels séparés lorsque des valeurs sont réutilisées ou portent leurs propres attributs.
+3. Complète ensuite le fichier XLSX sans modifier les noms de feuilles ni les en-têtes.
+4. Vérifie entièrement le modèle avant de rendre le fichier.
+
+Règles du modèle
+- TABLES : déclare les tables avec un ID technique stable, sans accent ni espace.
+- COLUMNS : déclare les colonnes, types, relations, formule éventuelle et description.
+- Relations : utilise Ref:TABLE ou RefList:TABLE.
+- DISPLAY : pour une Ref/RefList, indique si possible l'ID de la colonne de la table cible qui doit être affichée à l'utilisateur (ex. NOM, LIBELLE, IMMATRICULATION). Laisse vide si non pertinent.
+- CHOICES : déclare toutes les valeurs des colonnes Choice et ChoiceList.
+- FORMULA : contient uniquement une formule Grist, jamais une formule Excel.
+- SETTINGS : conserve par défaut timezone=Europe/Paris, dateFormat=DD/MM/YYYY et timeFormat=HH:mm sauf besoin explicite différent.
+- DateTime sans fuseau explicite sera interprété en Europe/Paris.
+- Utilise Choice seulement pour des listes courtes et stables. Si une valeur doit être enrichie, référencée, administrée ou réutilisée largement, crée plutôt une table référentielle.
+- Utilise des clés métier stables quand elles existent.
+- Prévois la structure pour faciliter filtres, vues, tableaux de bord et automatisations futures sans sur-concevoir.
+
+Contrôle final obligatoire
+Avant de rendre le XLSX, vérifie :
+- que chaque TABLE utilisée dans COLUMNS existe ;
+- que chaque cible Ref/RefList existe ;
+- que chaque DISPLAY existe bien dans la table référencée ;
+- que chaque Choice/ChoiceList possède ses valeurs dans CHOICES ;
+- que les identifiants sont uniques et valides ;
+- qu'aucune formule Excel n'est présente ;
+- que la structure évite les duplications évidentes et les relations incohérentes.
+
+Retour attendu
+Retourne uniquement le fichier XLSX complété, prêt à être importé dans Grist Model Builder.
+
+Mon besoin métier :
+[Décrire ici le besoin, les utilisateurs, les données à suivre, les règles importantes et les résultats attendus]

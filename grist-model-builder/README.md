@@ -29,7 +29,19 @@ Les deux formats sont convertis vers le même modèle interne.
 - paramètres de date/fuseau ;
 - simulation avant écriture ;
 - création non destructive : aucune suppression et aucune modification automatique d'une colonne existante différente ;
-- export du schéma Grist courant en XLSX ou JSON.
+- export du schéma Grist courant en XLSX ou JSON ;
+- traçabilité automatique optionnelle et activée par défaut.
+
+## Traçabilité automatique
+
+Le parcours guidé propose par défaut d'ajouter quatre colonnes techniques aux tables du modèle :
+
+- `CreeLe` — libellé **Créé le** — `DateTime:Europe/Paris` — Trigger Formula `NOW()` appliquée uniquement à la création ;
+- `CreePar` — libellé **Créé par** — Trigger Formula `user.Name`, `user.Email` ou `str(user.UserID)` selon l'option choisie ;
+- `ModifieLe` — libellé **Modifié le** — `DateTime:Europe/Paris` — Trigger Formula `NOW()` recalculée lors des modifications manuelles ;
+- `ModifiePar` — libellé **Modifié par** — même choix d'identité, recalculé lors des modifications manuelles.
+
+La fonctionnalité est non destructive : une colonne existante portant le même identifiant n'est pas remplacée. Les prompts IA demandent explicitement de ne pas recréer ces colonnes lorsque le widget gère la traçabilité.
 
 ## Paramètres français par défaut
 

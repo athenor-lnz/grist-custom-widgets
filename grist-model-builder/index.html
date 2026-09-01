@@ -4,94 +4,127 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Grist Model Builder</title>
-  <link rel="stylesheet" href="style.css?v=1.0.4">
+  <link rel="stylesheet" href="style.css?v=1.1.0">
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="grist-model-defaults.js?v=1.0.4"></script>
 </head>
 <body>
-  <main class="app-shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">WIDGET GRIST</p>
-        <h1>Grist Model Builder</h1>
-        <p class="lead">Construisez les tables de votre document depuis un modèle XLSX, rempli manuellement ou avec l’aide d’une IA.</p>
-      </div>
-      <div id="accessBadge" class="status status-wait"><span class="dot"></span><span>Connexion à Grist…</span></div>
-    </header>
+<main class="app-shell">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">WIDGET GRIST</p>
+      <h1>Grist Model Builder</h1>
+      <p class="lead">Construisez ou documentez le schéma de votre document Grist avec un parcours guidé XLSX ou JSON.</p>
+    </div>
+    <div id="accessBadge" class="status status-wait"><span class="dot"></span><span>Connexion à Grist…</span></div>
+  </header>
 
-    <section class="card steps-card">
-      <div class="step"><span>1</span><div><strong>Téléchargez le modèle</strong><small>Le format attendu est déjà documenté.</small></div></div>
-      <div class="step"><span>2</span><div><strong>Complétez-le</strong><small>Manuellement ou avec le prompt IA fourni.</small></div></div>
-      <div class="step"><span>3</span><div><strong>Analysez puis construisez</strong><small>Le widget simule avant toute modification.</small></div></div>
-    </section>
-
-    <section class="card resource-card">
-      <div class="section-heading">
-        <div><h2>Préparer le modèle</h2><p>Le fichier reste sur votre poste jusqu’à ce que vous lanciez la construction.</p></div>
-      </div>
+  <section class="card intro-card">
+    <div class="section-heading">
+      <div><h2>Choisissez votre parcours</h2><p>Les deux parcours utilisent exactement le même moteur de validation, simulation et construction.</p></div>
+    </div>
+    <div class="path-grid">
+      <button class="path-card" id="chooseXlsx" type="button">
+        <span class="path-tag">Recommandé pour débuter</span>
+        <strong>Parcours XLSX</strong>
+        <span>Je préfère un fichier lisible et modifiable dans Excel / LibreOffice.</span>
+        <em>Modèle XLSX → prompt IA → import → simulation</em>
+      </button>
+      <button class="path-card" id="chooseJson" type="button">
+        <span class="path-tag expert">Expert / IA</span>
+        <strong>Parcours JSON</strong>
+        <span>Je veux un format compact, précis et facile à générer automatiquement.</span>
+        <em>Prompt IA → JSON → collage/import → simulation</em>
+      </button>
+    </div>
+    <div class="export-strip">
+      <div><strong>Vous avez déjà un document Grist ?</strong><span>Exportez son schéma actuel pour le documenter ou le faire évoluer.</span></div>
       <div class="button-row">
-        <a class="btn btn-secondary" href="templates/modele-construction-grist-a-completer.xlsx" download>Télécharger le modèle XLSX</a>
-        <button id="copyPromptBtn" class="btn btn-secondary" type="button">Copier le prompt IA</button>
-        <a class="btn btn-ghost" href="prompt-ia.txt" download>Télécharger le prompt</a>
+        <button id="exportXlsxBtn" class="btn btn-secondary" type="button">Exporter le schéma en XLSX</button>
+        <button id="exportJsonBtn" class="btn btn-secondary" type="button">Exporter le schéma en JSON</button>
       </div>
-      <details class="prompt-box">
-        <summary>Voir le prompt IA</summary>
-        <pre id="promptText">Chargement…</pre>
-      </details>
-    </section>
+    </div>
+  </section>
 
-    <section class="card upload-card">
-      <div class="section-heading">
-        <div><h2>Charger un modèle XLSX</h2><p>Feuilles obligatoires : <code>TABLES</code> et <code>COLUMNS</code>. <code>CHOICES</code> est facultative.</p></div>
-      </div>
-      <label id="dropZone" class="drop-zone" for="fileInput">
-        <input id="fileInput" type="file" accept=".xlsx,.xls" hidden>
-        <span class="drop-icon">＋</span>
-        <strong>Choisir ou déposer un fichier XLSX</strong>
-        <small id="fileName">Aucun fichier chargé</small>
-      </label>
-      <div class="button-row spaced-top">
-        <button id="analyzeBtn" class="btn btn-primary" type="button" disabled>Analyser le modèle</button>
-        <button id="resetBtn" class="btn btn-ghost" type="button" disabled>Réinitialiser</button>
-      </div>
-      <div id="analysisMessage" class="notice hidden" role="status" aria-live="polite"></div>
-    </section>
+  <section id="xlsxPath" class="card path-section hidden">
+    <div class="path-header"><div><span class="step-kicker">PARCOURS XLSX</span><h2>Un parcours guidé, lisible et universel</h2></div><button class="link-btn changePath" type="button">Changer de parcours</button></div>
+    <div class="steps">
+      <div class="step"><span>1</span><div><strong>Téléchargez le modèle</strong><small>Il contient les feuilles, les exemples et les paramètres attendus.</small></div></div>
+      <div class="step"><span>2</span><div><strong>Décrivez votre besoin à l’IA</strong><small>Le prompt lui donne le rôle de concepteur de base de données Grist.</small></div></div>
+      <div class="step"><span>3</span><div><strong>Importez le XLSX complété</strong><small>Le widget vérifie tout avant d'écrire dans Grist.</small></div></div>
+    </div>
+    <div class="button-row">
+      <a class="btn btn-primary" href="templates/modele-construction-grist-a-completer.xlsx" download>Télécharger le modèle XLSX</a>
+      <button class="btn btn-secondary copy-prompt" data-prompt="prompt-xlsx.txt" type="button">Copier le prompt XLSX</button>
+      <a class="btn btn-ghost" href="prompt-xlsx.txt" download>Télécharger le prompt</a>
+    </div>
+    <details class="prompt-box"><summary>Voir le prompt XLSX</summary><pre id="xlsxPrompt">Chargement…</pre></details>
+    <label id="xlsxDrop" class="drop-zone">
+      <input id="xlsxInput" type="file" accept=".xlsx,.xls" hidden>
+      <span class="drop-icon">＋</span><strong>Choisir ou déposer le XLSX complété</strong><small id="xlsxFileName">Aucun fichier chargé</small>
+    </label>
+    <div class="button-row spaced-top"><button id="analyzeXlsxBtn" class="btn btn-primary" disabled>Analyser le XLSX</button></div>
+  </section>
 
-    <section id="previewSection" class="card hidden">
-      <div class="section-heading split">
-        <div><h2>Aperçu du modèle</h2><p>Vérifiez la structure avant de comparer avec le document courant.</p></div>
-        <div id="modelState" class="status status-ok"><span class="dot"></span><span>Modèle valide</span></div>
+  <section id="jsonPath" class="card path-section hidden">
+    <div class="path-header"><div><span class="step-kicker">PARCOURS JSON</span><h2>Un format direct pour les utilisateurs avancés et les IA</h2></div><button class="link-btn changePath" type="button">Changer de parcours</button></div>
+    <div class="steps">
+      <div class="step"><span>1</span><div><strong>Copiez le prompt JSON</strong><small>L’IA doit retourner uniquement un objet JSON valide.</small></div></div>
+      <div class="step"><span>2</span><div><strong>Collez ou chargez le JSON</strong><small>Vous pouvez aussi partir de l’exemple fourni.</small></div></div>
+      <div class="step"><span>3</span><div><strong>Validez puis simulez</strong><small>Le moteur est identique au parcours XLSX.</small></div></div>
+    </div>
+    <div class="button-row">
+      <button class="btn btn-primary copy-prompt" data-prompt="prompt-json.txt" type="button">Copier le prompt JSON</button>
+      <a class="btn btn-secondary" href="templates/exemple-modele-grist.json" download>Télécharger un exemple JSON</a>
+      <a class="btn btn-ghost" href="prompt-json.txt" download>Télécharger le prompt</a>
+    </div>
+    <details class="prompt-box"><summary>Voir le prompt JSON</summary><pre id="jsonPrompt">Chargement…</pre></details>
+    <div class="json-editor-wrap">
+      <div class="json-toolbar">
+        <label class="btn btn-secondary compact">Charger un fichier JSON<input id="jsonInput" type="file" accept=".json,application/json" hidden></label>
+        <button id="formatJsonBtn" class="btn btn-ghost compact" type="button">Formater</button>
+        <span id="jsonFileName" class="muted">Vous pouvez aussi coller directement le JSON.</span>
       </div>
-      <div id="metrics" class="metrics"></div>
-      <div id="tablesPreview" class="tables-preview"></div>
-      <div class="button-row spaced-top">
-        <button id="simulateBtn" class="btn btn-primary" type="button">Simuler dans ce document</button>
-      </div>
-    </section>
+      <textarea id="jsonText" spellcheck="false" placeholder='{"settings": {...}, "tables": [...], "columns": [...], "choices": [...]}'></textarea>
+    </div>
+    <div class="button-row spaced-top"><button id="analyzeJsonBtn" class="btn btn-primary">Analyser le JSON</button></div>
+  </section>
 
-    <section id="simulationSection" class="card hidden">
-      <div class="section-heading"><div><h2>Simulation</h2><p>Aucune donnée n’est modifiée à cette étape.</p></div></div>
-      <div id="simulationSummary" class="simulation-summary"></div>
-      <div id="simulationDetails" class="tables-preview"></div>
-      <div id="warningBox" class="notice warning hidden"></div>
-      <div class="button-row spaced-top">
-        <button id="buildBtn" class="btn btn-primary" type="button" disabled>Construire dans ce document</button>
-        <button id="resimulateBtn" class="btn btn-secondary" type="button">Relancer la simulation</button>
-      </div>
-    </section>
+  <div id="analysisMessage" class="notice hidden" role="status" aria-live="polite"></div>
 
-    <section id="progressSection" class="card hidden">
-      <div class="section-heading"><div><h2>Construction</h2><p id="progressText">Préparation…</p></div></div>
-      <div class="progress"><div id="progressBar"></div></div>
-      <div id="buildLog" class="build-log" aria-live="polite"></div>
-    </section>
+  <section id="previewSection" class="card hidden">
+    <div class="section-heading split">
+      <div><h2>Aperçu du modèle</h2><p id="sourceLabel">Structure validée.</p></div>
+      <div id="modelState" class="status status-ok"><span class="dot"></span><span>Modèle valide</span></div>
+    </div>
+    <div id="settingsPreview" class="settings-preview"></div>
+    <div id="metrics" class="metrics"></div>
+    <div id="tablesPreview" class="tables-preview"></div>
+    <div class="button-row spaced-top">
+      <button id="simulateBtn" class="btn btn-primary" type="button">Simuler dans ce document</button>
+      <button id="resetBtn" class="btn btn-ghost" type="button">Recommencer</button>
+    </div>
+  </section>
 
-    <footer>
-      <span>Grist Model Builder · sans serveur · traitement local du XLSX</span>
-      <span>v1.0.4</span>
-    </footer>
-  </main>
-  <script src="app.js?v=1.0.4"></script>
+  <section id="simulationSection" class="card hidden">
+    <div class="section-heading"><div><h2>Simulation</h2><p>Aucune donnée n’est modifiée à cette étape.</p></div></div>
+    <div id="simulationSummary" class="simulation-summary"></div>
+    <div id="simulationDetails" class="tables-preview"></div>
+    <div id="warningBox" class="notice warning hidden"></div>
+    <div class="button-row spaced-top">
+      <button id="buildBtn" class="btn btn-primary" type="button" disabled>Construire dans ce document</button>
+      <button id="resimulateBtn" class="btn btn-secondary" type="button">Relancer la simulation</button>
+    </div>
+  </section>
+
+  <section id="progressSection" class="card hidden">
+    <div class="section-heading"><div><h2>Construction</h2><p id="progressText">Préparation…</p></div></div>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div id="buildLog" class="build-log" aria-live="polite"></div>
+  </section>
+
+  <footer><span>Grist Model Builder · aucun serveur applicatif · traitement local</span><span>v1.1.0</span></footer>
+</main>
+<script src="app.js?v=1.1.0"></script>
 </body>
 </html>

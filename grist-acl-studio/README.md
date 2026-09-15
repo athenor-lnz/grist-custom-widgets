@@ -9,7 +9,7 @@ Le widget ne contacte aucune IA et ne demande aucune clé API Grist.
 Workflow :
 
 1. Le widget lit la structure et les ACL du document courant.
-2. Il génère un prompt contenant uniquement le schéma et les règles ACL, **jamais les données métier**.
+2. Il génère un prompt compact contenant uniquement les identifiants de tables, les colonnes utiles aux ACL et les règles actuelles, **jamais les données métier, les formules métier ou les colonnes techniques `gristHelper_*`**.
 3. L'utilisateur colle ce prompt dans ChatGPT, Claude, Gandalf ou une autre IA.
 4. L'IA renvoie un JSON au format `grist-acl-studio/v1`.
 5. L'utilisateur colle ou importe ce JSON dans le widget.
@@ -96,4 +96,4 @@ Les ressources absentes du JSON ne sont pas modifiées.
 
 ## Version
 
-0.1.0
+0.2.0

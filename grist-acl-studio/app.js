@@ -4,7 +4,7 @@ grist.ready({requiredAccess: 'full'});
 
 const $ = (q) => document.querySelector(q);
 const $$ = (q) => [...document.querySelectorAll(q)];
-const VERSION = '0.1.1';
+const VERSION = '0.2.0';
 const SCHEMA = 'grist-acl-studio/v1';
 
 const state = {
@@ -104,21 +104,98 @@ function buildCurrentPolicy() {
   };
 }
 
+function isAclUsefulColumn(col) {
+  const id = text(col?.colId).trim();
+  const type = text(col?.type).trim();
+  return Boolean(id) &&
+    id !== 'manualSort' &&
+    type !== 'ManualSortPos' &&
+    !id.startsWith('gristHelper_');
+}
+
 function documentSchemaForAI() {
-  return state.tables
-    .filter(t => !text(t.tableId).startsWith('_grist_'))
-    .map(t => ({
-      table: t.tableId,
-      columns: (state.columnsByTable.get(t.tableId) || []).map(c => ({id: c.colId, label: c.label, type: c.type, formula: c.isFormula ? text(c.formula) : ''}))
-    }));
+  return Object.fromEntries(
+    state.tables
+      .filter(t => !text(t.tableId).startsWith('_grist_'))
+      .map(t => {
+        const columns = (state.columnsByTable.get(t.tableId) || [])
+          .filter(isAclUsefulColumn)
+          .map(c => `${c.colId}:${c.type}`);
+        return [t.tableId, columns];
+      })
+  );
+}
+
+function currentAclForAI() {
+  return {
+    userAttributes: getUserAttributeRules().map(r => ({
+      definition: text(r.userAttributes),
+      when: text(r.aclFormula),
+      ...(text(r.memo) ? {memo: text(r.memo)} : {}),
+    })),
+    resources: state.resources.map(resource => ({
+      table: text(resource.tableId),
+      columns: canonCols(resource.colIds),
+      rules: rulesForResource(resource.id).map(r => ({
+        when: text(r.aclFormula),
+        permissions: text(r.permissionsText) || 'none',
+        ...(text(r.memo) ? {memo: text(r.memo)} : {}),
+        ...(text(r.principals) ? {principals: text(r.principals)} : {}),
+      })),
+    })),
+  };
 }
 
 function buildAiPrompt() {
   const request = $('#aiRequest').value.trim() || '[Décris ici les droits souhaités]';
-  const current = buildCurrentPolicy();
-  return `Tu es expert des règles d'accès avancées de Grist.\n\nOBJECTIF UTILISATEUR\n${request}\n\nCONTRAINTE DE SORTIE\nRéponds UNIQUEMENT par un objet JSON valide, sans markdown ni commentaire autour. Le JSON doit respecter le schéma Grist ACL Studio v1 ci-dessous.\n\nRÈGLES IMPORTANTES\n- N'invente jamais un identifiant de table ou de colonne : utilise seulement ceux fournis dans STRUCTURE_DU_DOCUMENT.\n- Le widget applique le mode \"replace-resources\" : toute ressource présente dans ton JSON remplacera complètement les règles existantes de cette même ressource (même table + mêmes colonnes). Les ressources absentes restent inchangées.\n- Mets une règle Owner explicite en PREMIÈRE position de chaque ressource modifiée, accordant \"all\" ou au minimum +CRUDS.\n- Conserve toute logique que l'utilisateur demande explicitement de garder (par exemple BRAVO). Si une ressource existante doit être modifiée tout en conservant certaines règles, recopie ces règles dans la ressource JSON produite.\n- Utilise les constantes Grist usuelles (OWNER, EDITOR, VIEWER) uniquement si approprié.\n- Les permissions autorisées sont : all, none, ou des combinaisons comme +R, +CU, +R-CUD, -D.\n- Pour une règle de repli sans condition, mets \"when\": \"\".\n- Fournis toujours \"label\" et \"explanation\" en français pour que le tableau de bord soit compréhensible par un débutant.\n- Ne modifie pas les attributs utilisateur existants sauf demande explicite.\n\nFORMAT ATTENDU\n{\n  \"schema\": \"${SCHEMA}\",\n  \"version\": 1,\n  \"title\": \"Titre court\",\n  \"description\": \"Résumé de la politique\",\n  \"mode\": \"replace-resources\",\n  \"resources\": [\n    {\n      \"table\": \"TABLE_ID\",\n      \"columns\": \"*\",\n      \"description\": \"Ce que protège cette ressource\",\n      \"rules\": [\n        {\n          \"label\": \"Owner\",\n          \"explanation\": \"Le propriétaire garde tous les droits.\",\n          \"when\": \"user.Access == OWNER\",\n          \"permissions\": \"all\",\n          \"memo\": \"\"\n        }\n      ]\n    }\n  ]\n}\n\nSTRUCTURE_DU_DOCUMENT\n${JSON.stringify(documentSchemaForAI(), null, 2)}\n\nACL_ACTUELLES\n${JSON.stringify(current, null, 2)}\n`;
+  const current = currentAclForAI();
+
+  return `Tu es expert des règles d'accès avancées de Grist.
+
+BESOIN
+${request}
+
+MISSION
+Produis uniquement le JSON à importer dans Grist ACL Studio.
+
+RÈGLES
+- Utilise uniquement les tables et colonnes listées dans STRUCTURE.
+- Chaque ressource présente dans le JSON remplace toutes les règles actuelles de cette même ressource.
+- Recopie donc dans la ressource proposée toute règle existante à conserver.
+- Place une règle Owner en premier : "user.Access == OWNER" avec "all".
+- Conserve les attributs utilisateur existants sauf demande contraire.
+- "when": "" signifie règle de repli.
+- permissions : "all", "none" ou syntaxe Grist (+R, +CU, +R-CUD, -D...).
+- Ajoute un "label" court et une "explanation" simple en français à chaque règle.
+- Réponds UNIQUEMENT par du JSON valide, sans markdown.
+
+FORMAT
+{
+  "schema": "${SCHEMA}",
+  "version": 1,
+  "title": "Titre",
+  "description": "Résumé simple",
+  "mode": "replace-resources",
+  "resources": [{
+    "table": "TABLE_ID",
+    "columns": "*",
+    "description": "Objet de la ressource",
+    "rules": [{
+      "label": "Owner",
+      "explanation": "Le propriétaire garde tous les droits.",
+      "when": "user.Access == OWNER",
+      "permissions": "all"
+    }]
+  }]
 }
 
+STRUCTURE
+${JSON.stringify(documentSchemaForAI(), null, 2)}
+
+ACL_ACTUELLES
+${JSON.stringify(current, null, 2)}
+`;
+}
 function permissionTokens(value) {
   const s = text(value).trim();
   if (s === 'all') return [{kind:'grant', chars:'CRUDS'}];
@@ -131,6 +208,86 @@ function renderPermissionSet(value) {
   const tokens = permissionTokens(value);
   if (!tokens.length) return `<span class="perm deny">${esc(value || '—')}</span>`;
   return `<span class="permission-set">${tokens.flatMap(t => [...t.chars].map(ch => `<span class="perm ${t.kind==='deny'?'deny':ch.toLowerCase()}">${t.kind==='deny'?'−':'+'}${ch}</span>`)).join('')}</span>`;
+}
+
+function humanPermissions(value) {
+  const tokens = permissionTokens(value);
+  if (!tokens.length) return text(value) || 'Droit non précisé';
+
+  const labels = {R:'voir', C:'créer', U:'modifier', D:'supprimer', S:'modifier le schéma'};
+  const granted = [];
+  const denied = [];
+
+  for (const token of tokens) {
+    for (const ch of token.chars) {
+      const label = labels[ch] || ch;
+      (token.kind === 'deny' ? denied : granted).push(label);
+    }
+  }
+
+  if (text(value).trim() === 'all') return 'Tous les droits';
+  if (text(value).trim() === 'none') return 'Aucun droit';
+
+  const parts = [];
+  if (granted.length) parts.push('Peut ' + granted.join(', '));
+  if (denied.length) parts.push('ne peut pas ' + denied.join(', '));
+  return parts.join(' · ');
+}
+
+function ruleAudience(rule) {
+  const formula = text(rule?.when);
+  const labels = [];
+
+  if (/user\.Access\s*==\s*OWNER|OWNER\s*==\s*user\.Access/i.test(formula)) labels.push('Propriétaire');
+
+  const profileEq = formula.match(/PROFIL\s*==\s*["']([^"']+)["']/i);
+  if (profileEq) labels.push(profileEq[1]);
+
+  const profileIn = formula.match(/PROFIL\s+in\s+\[([^\]]+)\]/i);
+  if (profileIn) {
+    const names = [...profileIn[1].matchAll(/["']([^"']+)["']/g)].map(m => m[1]);
+    if (names.length) labels.push(names.join(' / '));
+  }
+
+  if (/UNITE_SOCLE\s*==\s*["']BRAVO["']/i.test(formula)) labels.push('Socle BRAVO');
+  if (/SUPER_AUTO\s*==\s*True|SUPER_AUTO\b/i.test(formula) && !labels.includes('SUPER AUTO')) labels.push('SUPER AUTO');
+  if (/user\.Email\s*==\s*rec\.Email|rec\.Email\s*==\s*user\.Email/i.test(formula)) labels.push('Utilisateur concerné');
+  if (!formula.trim()) labels.push('Repli');
+
+  return labels.length ? [...new Set(labels)].join(' · ') : (text(rule?.label).trim() && rule.label !== 'Règle' ? rule.label : 'Autre règle');
+}
+
+function ruleScope(rule) {
+  const formula = text(rule?.when);
+  const bits = [];
+
+  if (/DROITS\s*==\s*["']Modification["']/i.test(formula)) bits.push('si droit Modification');
+  if (/rec\.GTG\s*==\s*user\.UTIL\.GTG/i.test(formula)) bits.push('sur son GTG');
+  if (/newRec\.GTG\s*==\s*user\.UTIL\.GTG/i.test(formula)) bits.push('sans changer de GTG');
+  if (/rec\.UNITE\s*==\s*user\.UTIL\.UNITE/i.test(formula)) bits.push('sur son unité');
+  if (/rec\.TYPE\s*==\s*["']VCB["']/i.test(formula)) bits.push('pour les VCB');
+
+  return bits.join(' · ');
+}
+
+function renderSimpleRule(rule, index) {
+  const audience = ruleAudience(rule);
+  const scope = ruleScope(rule);
+  const explanation = text(rule.explanation).trim();
+  const technical = text(rule.when).trim() || '(sans condition — règle de repli)';
+
+  return `<div class="rule">
+    <div class="rule-head">
+      <span class="rule-label">${esc(audience)}</span>
+      <strong>${esc(humanPermissions(rule.permissions))}</strong>
+    </div>
+    ${scope ? `<div class="rule-explanation">${esc(scope)}</div>` : ''}
+    ${explanation ? `<div class="rule-explanation">${esc(explanation)}</div>` : ''}
+    <details>
+      <summary>Voir la règle technique</summary>
+      <code>${esc(technical)}</code>
+    </details>
+  </div>`;
 }
 
 function policyForDashboard() { return state.imported || buildCurrentPolicy(); }
@@ -149,7 +306,14 @@ function renderDashboard() {
 function renderResourceCard(resource) {
   const colLabel = canonCols(resource.columns) === '*' ? 'Toutes les colonnes' : `Colonnes : ${canonCols(resource.columns)}`;
   const rules = resource.rules || [];
-  return `<article class="resource-card"><div class="resource-title"><div><strong>${esc(resource.table || '*')}</strong><small>${esc(colLabel)}</small></div><span class="badge neutral">${rules.length} règle${rules.length>1?'s':''}</span></div>${resource.description?`<div class="rule"><div class="rule-explanation">${esc(resource.description)}</div></div>`:''}${rules.map((r,i)=>`<div class="rule"><div class="rule-head"><span class="rule-label">${esc(r.label || `Règle ${i+1}`)}</span>${renderPermissionSet(r.permissions)}</div>${r.explanation?`<div class="rule-explanation">${esc(r.explanation)}</div>`:''}<code>${esc(r.when || '(sans condition — règle de repli)')}</code></div>`).join('')}</article>`;
+  return `<article class="resource-card">
+    <div class="resource-title">
+      <div><strong>${esc(resource.table || '*')}</strong><small>${esc(colLabel)}</small></div>
+      <span class="badge neutral">${rules.length} règle${rules.length>1?'s':''}</span>
+    </div>
+    ${resource.description ? `<div class="rule"><div class="rule-explanation">${esc(resource.description)}</div></div>` : ''}
+    ${rules.map(renderSimpleRule).join('')}
+  </article>`;
 }
 
 function renderCurrentAcl() {

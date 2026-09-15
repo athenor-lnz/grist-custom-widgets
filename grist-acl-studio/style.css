@@ -8,3 +8,8 @@
 @media(prefers-color-scheme:dark){:root{--bg:#161616;--surface:#242424;--surface2:#343434;--border:#555;--text:#f6f6f6;--muted:#cecece;--blue:#8585f6;--blue2:#a3a3fd;--shadow:0 2px 12px rgba(0,0,0,.3)}.status{color:#161616}.perm.deny{background:#444;color:#ddd}}
 @media(max-width:980px){.two-cols{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.hero,.card-head{align-items:flex-start;flex-direction:column}.legend{justify-content:flex-start}.resource-grid{grid-template-columns:1fr}}
 @media(max-width:520px){body{padding:8px}.kpis{grid-template-columns:1fr}.footer{flex-direction:column}}
+
+.rule details{margin-top:7px}
+.rule details summary{cursor:pointer;color:var(--blue);font-size:.78rem;font-weight:700}
+.rule details code{margin-top:7px}
+.rule-head>strong{font-size:.8rem;color:var(--text);text-align:right}

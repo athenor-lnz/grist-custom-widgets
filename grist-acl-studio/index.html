@@ -10,125 +10,101 @@
 </head>
 <body>
 <main class="app">
-  <header class="hero">
+  <header class="topbar">
     <div>
-      <div class="eyebrow">Grist · Administration des accès</div>
-      <h1>Grist ACL Studio</h1>
-      <p>Lire, expliquer, exporter, simuler et appliquer des règles ACL Grist à partir d’un JSON généré par une IA — sans clé API Grist.</p>
+      <h1>Permissions</h1>
+      <p>Comprendre les droits du document et appliquer un JSON généré par une IA.</p>
     </div>
-    <div class="hero-actions">
-      <span id="accessBadge" class="badge neutral">Chargement…</span>
-      <button id="reloadBtn" class="btn secondary" type="button">Actualiser</button>
+    <div class="top-actions">
+      <span id="accessBadge" class="badge">Chargement…</span>
+      <button id="copyPromptBtn" class="btn primary" type="button">🤖 Copier pour l’IA</button>
+      <button id="importBtn" class="btn" type="button">📥 Importer JSON</button>
+      <button id="backupBtn" class="btn quiet" type="button">💾 Sauvegarder</button>
+      <button id="reloadBtn" class="btn quiet icon" type="button" title="Actualiser">↻</button>
     </div>
   </header>
 
   <div id="status" class="status" hidden></div>
 
-  <nav class="tabs" aria-label="Sections">
-    <button class="tab active" data-tab="dashboard" type="button">📊 Tableau de bord</button>
-    <button class="tab" data-tab="current" type="button">🔍 ACL actuelles</button>
-    <button class="tab" data-tab="json" type="button">{ } JSON / IA</button>
-    <button class="tab" data-tab="diff" type="button">🔄 Simulation <span id="diffCount" class="pill">0</span></button>
-  </nav>
+  <section class="workspace">
+    <aside class="panel tables-panel">
+      <div class="panel-head">
+        <strong>Tables</strong>
+        <span id="tableCount" class="count"></span>
+      </div>
+      <div class="search-wrap">
+        <input id="tableSearch" type="search" placeholder="Rechercher une table">
+      </div>
+      <div id="tableList" class="table-list"></div>
+    </aside>
 
-  <section id="tab-dashboard" class="tab-panel active">
-    <div class="kpis">
-      <article class="kpi"><span>Ressources ACL</span><strong id="kpiResources">0</strong><small>tables ou groupes de colonnes</small></article>
-      <article class="kpi"><span>Règles</span><strong id="kpiRules">0</strong><small>hors attributs utilisateur</small></article>
-      <article class="kpi"><span>Tables protégées</span><strong id="kpiTables">0</strong><small>ressources métier distinctes</small></article>
-      <article class="kpi"><span>Attributs utilisateur</span><strong id="kpiAttrs">0</strong><small>conservés par défaut</small></article>
-    </div>
-
-    <article class="card">
-      <header class="card-head">
+    <section class="panel rules-panel">
+      <div class="panel-head main-head">
         <div>
-          <h2 id="dashboardTitle">Lecture simplifiée des ACL actuelles</h2>
-          <p id="dashboardIntro">Chaque carte explique une ressource et les règles qui s’y appliquent.</p>
+          <strong id="selectedTableTitle">—</strong>
+          <small id="selectedTableMeta"></small>
         </div>
-        <div class="legend">
-          <span class="perm r">+R</span><span class="perm c">+C</span><span class="perm u">+U</span><span class="perm d">+D</span><span class="perm deny">−</span>
+        <label class="expert-toggle">
+          <input id="expertToggle" type="checkbox">
+          <span>Mode expert</span>
+        </label>
+      </div>
+      <div id="rulesView" class="rules-view"></div>
+    </section>
+
+    <aside class="panel summary-panel">
+      <div class="panel-head">
+        <div>
+          <strong>Qui peut quoi ?</strong>
+          <small>Lecture simplifiée</small>
         </div>
-      </header>
-      <div id="dashboardResources" class="resource-grid"></div>
-    </article>
+      </div>
+      <div id="summaryView" class="summary-view"></div>
+    </aside>
   </section>
 
-  <section id="tab-current" class="tab-panel">
-    <article class="card">
-      <header class="card-head">
-        <div><h2>ACL actuelles du document</h2><p>Vue technique fidèle aux tables internes <code>_grist_ACLResources</code> et <code>_grist_ACLRules</code>.</p></div>
-        <div class="actions">
-          <button id="exportCurrentBtn" class="btn secondary" type="button">Exporter JSON</button>
-          <button id="downloadBackupBtn" class="btn secondary" type="button">Sauvegarde JSON</button>
-        </div>
-      </header>
-      <div id="currentAcl" class="technical-list"></div>
-    </article>
-  </section>
-
-  <section id="tab-json" class="tab-panel">
-    <div class="two-cols">
-      <article class="card">
-        <header class="card-head">
-          <div><h2>1. Demander les règles à une IA</h2><p>Le prompt contient uniquement les tables, colonnes utiles aux ACL et règles actuelles — jamais les données métier ni les formules métier.</p></div>
-        </header>
-        <div class="card-body">
-          <label class="field">
-            <span>Décris le résultat souhaité</span>
-            <textarea id="aiRequest" rows="7" placeholder="Ex. Tous les profils GTG voient tous les véhicules, mais un GTG en modification ne peut modifier que les véhicules de son propre GTG. Conserver les règles BRAVO."></textarea>
-          </label>
-          <div class="actions wrap">
-            <button id="copyPromptBtn" class="btn" type="button">Copier le prompt IA</button>
-            <button id="downloadPromptBtn" class="btn secondary" type="button">Télécharger le prompt</button>
-          </div>
-          <div class="help-box">
-            <strong>Workflow conseillé</strong>
-            <ol>
-              <li>Décris le besoin.</li>
-              <li>Copie le prompt dans ChatGPT, Claude ou Gandalf.</li>
-              <li>Demande une réponse JSON uniquement.</li>
-              <li>Colle le JSON à droite puis valide.</li>
-            </ol>
-          </div>
-        </div>
-      </article>
-
-      <article class="card">
-        <header class="card-head">
-          <div><h2>2. Importer le JSON proposé</h2><p>Le widget vérifie tables, colonnes, permissions, présence d’une règle Owner et doublons.</p></div>
-          <div class="actions">
-            <button id="sampleBtn" class="btn ghost" type="button">Exemple</button>
-            <button id="clearJsonBtn" class="btn ghost" type="button">Effacer</button>
-          </div>
-        </header>
-        <div class="card-body">
-          <textarea id="jsonInput" class="code-area" rows="23" spellcheck="false" placeholder='{"schema":"grist-acl-studio/v1", ...}'></textarea>
-          <input id="jsonFile" type="file" accept=".json,application/json" hidden>
-          <div class="actions wrap">
-            <button id="importFileBtn" class="btn secondary" type="button">Charger un .json</button>
-            <button id="validateBtn" class="btn" type="button">Valider et simuler</button>
-          </div>
-          <div id="validationBox" class="validation empty-state">Aucun JSON chargé.</div>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section id="tab-diff" class="tab-panel">
-    <article class="card">
-      <header class="card-head">
-        <div><h2>Simulation avant application</h2><p>Seules les ressources présentes dans le JSON sont remplacées. Les autres ressources ACL restent intactes.</p></div>
-        <button id="applyBtn" class="btn danger" type="button" disabled>Appliquer les changements</button>
-      </header>
-      <div id="diffSummary" class="diff-summary">Valide d’abord un JSON pour voir les changements.</div>
-      <div id="diffList" class="diff-list"></div>
-    </article>
-  </section>
-
-  <footer class="footer">
-    <span>Grist ACL Studio <strong>v0.2.0</strong></span>
-    <span>Aucune clé API · aucun backend · traitement dans le navigateur</span>
+  <footer>
+    <span>Grist ACL Studio v0.3.0</span>
+    <span>Aucune clé API · aucune donnée métier envoyée</span>
   </footer>
 </main>
+
+<dialog id="importDialog">
+  <form method="dialog" class="dialog-shell">
+    <header class="dialog-head">
+      <div>
+        <h2>Importer des règles JSON</h2>
+        <p>Colle ici le JSON produit par ChatGPT, Claude ou Gandalf.</p>
+      </div>
+      <button class="close-btn" value="cancel" aria-label="Fermer">×</button>
+    </header>
+    <div class="dialog-body">
+      <textarea id="jsonInput" rows="20" spellcheck="false" placeholder='{"schema":"grist-acl-studio/v1", ...}'></textarea>
+      <input id="jsonFile" type="file" accept=".json,application/json" hidden>
+      <div class="dialog-actions">
+        <button id="loadFileBtn" class="btn quiet" type="button">Choisir un fichier</button>
+        <button id="validateBtn" class="btn primary" type="button">Comparer avec les règles actuelles</button>
+      </div>
+      <div id="validationBox" class="validation" hidden></div>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="diffDialog">
+  <form method="dialog" class="dialog-shell wide">
+    <header class="dialog-head">
+      <div>
+        <h2>Modifications proposées</h2>
+        <p id="diffIntro">Vérifie avant d’appliquer.</p>
+      </div>
+      <button class="close-btn" value="cancel" aria-label="Fermer">×</button>
+    </header>
+    <div id="diffView" class="dialog-body diff-view"></div>
+    <footer class="dialog-footer">
+      <button class="btn quiet" value="cancel">Annuler</button>
+      <button id="applyBtn" class="btn primary" type="button">Appliquer</button>
+    </footer>
+  </form>
+</dialog>
 </body>
 </html>

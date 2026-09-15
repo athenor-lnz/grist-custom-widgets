@@ -1,0 +1,40 @@
+{
+  "schema": "grist-acl-studio/v1",
+  "version": 1,
+  "title": "Exemple — GTG sur VEHICULES",
+  "description": "Tous les GTG voient tous les véhicules. Un GTG en modification ne modifie que son périmètre.",
+  "mode": "replace-resources",
+  "resources": [
+    {
+      "table": "VEHICULES",
+      "columns": "*",
+      "description": "Droits principaux sur le parc véhicules.",
+      "rules": [
+        {
+          "label": "Owner",
+          "explanation": "Le propriétaire conserve tous les droits.",
+          "when": "user.Access == OWNER",
+          "permissions": "all"
+        },
+        {
+          "label": "GTG — lecture globale",
+          "explanation": "Tous les profils GTG peuvent consulter tous les véhicules.",
+          "when": "user.UTIL and user.UTIL.UNITE_ACTIF == True and user.UTIL.PROFIL == \"GTG\"",
+          "permissions": "+R"
+        },
+        {
+          "label": "GTG — modification propre",
+          "explanation": "Un GTG en modification ne modifie que les véhicules de son GTG.",
+          "when": "user.UTIL and user.UTIL.UNITE_ACTIF == True and user.UTIL.PROFIL == \"GTG\" and user.UTIL.DROITS == \"Modification\" and rec.GTG == user.UTIL.GTG and newRec.GTG == user.UTIL.GTG",
+          "permissions": "+U"
+        },
+        {
+          "label": "Repli",
+          "explanation": "Tout droit non accordé est refusé.",
+          "when": "",
+          "permissions": "none"
+        }
+      ]
+    }
+  ]
+}

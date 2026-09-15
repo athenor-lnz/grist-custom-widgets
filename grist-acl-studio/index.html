@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Grist ACL Studio</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<main class="app">
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Grist · Administration des accès</div>
+      <h1>Grist ACL Studio</h1>
+      <p>Lire, expliquer, exporter, simuler et appliquer des règles ACL Grist à partir d’un JSON généré par une IA — sans clé API Grist.</p>
+    </div>
+    <div class="hero-actions">
+      <span id="accessBadge" class="badge neutral">Chargement…</span>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualiser</button>
+    </div>
+  </header>
+
+  <div id="status" class="status" hidden></div>
+
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-tab="dashboard" type="button">📊 Tableau de bord</button>
+    <button class="tab" data-tab="current" type="button">🔍 ACL actuelles</button>
+    <button class="tab" data-tab="json" type="button">{ } JSON / IA</button>
+    <button class="tab" data-tab="diff" type="button">🔄 Simulation <span id="diffCount" class="pill">0</span></button>
+  </nav>
+
+  <section id="tab-dashboard" class="tab-panel active">
+    <div class="kpis">
+      <article class="kpi"><span>Ressources ACL</span><strong id="kpiResources">0</strong><small>tables ou groupes de colonnes</small></article>
+      <article class="kpi"><span>Règles</span><strong id="kpiRules">0</strong><small>hors attributs utilisateur</small></article>
+      <article class="kpi"><span>Tables protégées</span><strong id="kpiTables">0</strong><small>ressources métier distinctes</small></article>
+      <article class="kpi"><span>Attributs utilisateur</span><strong id="kpiAttrs">0</strong><small>conservés par défaut</small></article>
+    </div>
+
+    <article class="card">
+      <header class="card-head">
+        <div>
+          <h2 id="dashboardTitle">Lecture simplifiée des ACL actuelles</h2>
+          <p id="dashboardIntro">Chaque carte explique une ressource et les règles qui s’y appliquent.</p>
+        </div>
+        <div class="legend">
+          <span class="perm r">+R</span><span class="perm c">+C</span><span class="perm u">+U</span><span class="perm d">+D</span><span class="perm deny">−</span>
+        </div>
+      </header>
+      <div id="dashboardResources" class="resource-grid"></div>
+    </article>
+  </section>
+
+  <section id="tab-current" class="tab-panel">
+    <article class="card">
+      <header class="card-head">
+        <div><h2>ACL actuelles du document</h2><p>Vue technique fidèle aux tables internes <code>_grist_ACLResources</code> et <code>_grist_ACLRules</code>.</p></div>
+        <div class="actions">
+          <button id="exportCurrentBtn" class="btn secondary" type="button">Exporter JSON</button>
+          <button id="downloadBackupBtn" class="btn secondary" type="button">Sauvegarde JSON</button>
+        </div>
+      </header>
+      <div id="currentAcl" class="technical-list"></div>
+    </article>
+  </section>
+
+  <section id="tab-json" class="tab-panel">
+    <div class="two-cols">
+      <article class="card">
+        <header class="card-head">
+          <div><h2>1. Demander les règles à une IA</h2><p>Le prompt contient la structure du document et les ACL, jamais les données métier.</p></div>
+        </header>
+        <div class="card-body">
+          <label class="field">
+            <span>Décris le résultat souhaité</span>
+            <textarea id="aiRequest" rows="7" placeholder="Ex. Tous les profils GTG voient tous les véhicules, mais un GTG en modification ne peut modifier que les véhicules de son propre GTG. Conserver les règles BRAVO."></textarea>
+          </label>
+          <div class="actions wrap">
+            <button id="copyPromptBtn" class="btn" type="button">Copier le prompt IA</button>
+            <button id="downloadPromptBtn" class="btn secondary" type="button">Télécharger le prompt</button>
+          </div>
+          <div class="help-box">
+            <strong>Workflow conseillé</strong>
+            <ol>
+              <li>Décris le besoin.</li>
+              <li>Copie le prompt dans ChatGPT, Claude ou Gandalf.</li>
+              <li>Demande une réponse JSON uniquement.</li>
+              <li>Colle le JSON à droite puis valide.</li>
+            </ol>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-head">
+          <div><h2>2. Importer le JSON proposé</h2><p>Le widget vérifie tables, colonnes, permissions, présence d’une règle Owner et doublons.</p></div>
+          <div class="actions">
+            <button id="sampleBtn" class="btn ghost" type="button">Exemple</button>
+            <button id="clearJsonBtn" class="btn ghost" type="button">Effacer</button>
+          </div>
+        </header>
+        <div class="card-body">
+          <textarea id="jsonInput" class="code-area" rows="23" spellcheck="false" placeholder='{"schema":"grist-acl-studio/v1", ...}'></textarea>
+          <input id="jsonFile" type="file" accept=".json,application/json" hidden>
+          <div class="actions wrap">
+            <button id="importFileBtn" class="btn secondary" type="button">Charger un .json</button>
+            <button id="validateBtn" class="btn" type="button">Valider et simuler</button>
+          </div>
+          <div id="validationBox" class="validation empty-state">Aucun JSON chargé.</div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="tab-diff" class="tab-panel">
+    <article class="card">
+      <header class="card-head">
+        <div><h2>Simulation avant application</h2><p>Seules les ressources présentes dans le JSON sont remplacées. Les autres ressources ACL restent intactes.</p></div>
+        <button id="applyBtn" class="btn danger" type="button" disabled>Appliquer les changements</button>
+      </header>
+      <div id="diffSummary" class="diff-summary">Valide d’abord un JSON pour voir les changements.</div>
+      <div id="diffList" class="diff-list"></div>
+    </article>
+  </section>
+
+  <footer class="footer">
+    <span>Grist ACL Studio <strong>v0.1.0</strong></span>
+    <span>Aucune clé API · aucun backend · traitement dans le navigateur</span>
+  </footer>
+</main>
+</body>
+</html>

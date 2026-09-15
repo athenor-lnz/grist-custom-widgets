@@ -1,0 +1,7 @@
+{
+  "name": "Grist ACL Studio",
+  "url": "https://athenor-lnz.github.io/grist-custom-widgets/grist-acl-studio/",
+  "widgetId": "grist-acl-studio",
+  "published": true,
+  "accessLevel": "full"
+}

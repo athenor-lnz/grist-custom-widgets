@@ -4,7 +4,7 @@ grist.ready({requiredAccess: 'full'});
 
 const $ = (q) => document.querySelector(q);
 const $$ = (q) => [...document.querySelectorAll(q)];
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 const SCHEMA = 'grist-acl-studio/v1';
 
 const state = {
@@ -138,7 +138,7 @@ function renderDashboard() {
   const policy = policyForDashboard();
   const imported = Boolean(state.imported);
   $('#dashboardTitle').textContent = imported ? `Aperçu : ${policy.title || 'Politique importée'}` : 'Lecture simplifiée des ACL actuelles';
-  $('#dashboardIntro').textContent = imported ? (policy.description || 'Aperçu des règles proposées par  le JSON.') : 'Chaque carte explique une ressource et les règles qui s'y appliquent.';
+  $('#dashboardIntro').textContent = imported ? (policy.description || 'Aperçu des règles proposées par le JSON.') : "Chaque carte explique une ressource et les règles qui s'y appliquent.";
   const resources = policy.resources || [];
   $('#kpiResources').textContent = resources.length;
   $('#kpiRules').textContent = resources.reduce((n,r)=>n+(r.rules?.length||0),0);
@@ -149,13 +149,13 @@ function renderDashboard() {
 function renderResourceCard(resource) {
   const colLabel = canonCols(resource.columns) === '*' ? 'Toutes les colonnes' : `Colonnes : ${canonCols(resource.columns)}`;
   const rules = resource.rules || [];
-  return `<article class="resource-card"><div class="resource-title"><div><strong>${esc(resource.table || '*')}</strong><small>${esc(colLabel)}</small></div><span class="badge neutral">${rules.length} règle${rules.length>1?'s':'g}</span></div>${resource.description?`<div class="rule"><div class="rule-explanation">${esc(resource.description)}</div></div>`:''}${rules.map((r,i)=>`<div class="rule"><div class="rule-head"><span class="rule-label">${esc(r.label || `Règle ${i+1}`)}</span>${renderPermissionSet(r.permissions)}</div>${r.explanation?`<div class="rule-explanation">${esc(r.explanation)}</div>`:''}<code>${esc(r.when || '(sans condition — règle de repli)')}</code></div>`).join('')}</article>`;
+  return `<article class="resource-card"><div class="resource-title"><div><strong>${esc(resource.table || '*')}</strong><small>${esc(colLabel)}</small></div><span class="badge neutral">${rules.length} règle${rules.length>1?'s':''}</span></div>${resource.description?`<div class="rule"><div class="rule-explanation">${esc(resource.description)}</div></div>`:''}${rules.map((r,i)=>`<div class="rule"><div class="rule-head"><span class="rule-label">${esc(r.label || `Règle ${i+1}`)}</span>${renderPermissionSet(r.permissions)}</div>${r.explanation?`<div class="rule-explanation">${esc(r.explanation)}</div>`:''}<code>${esc(r.when || '(sans condition — règle de repli)')}</code></div>`).join('')}</article>`;
 }
 
 function renderCurrentAcl() {
   $('#currentAcl').innerHTML = state.resources.length ? state.resources.map(resource => {
     const rules = rulesForResource(resource.id);
-    return `<article class="technical-resource"><header><strong>${esc(resource.tableId)} · ${esc(resource.colIds || '*')}</strong><span>${rules.length} règle${rules.length>1?'s':'g}</span></header>${rules.map(r=>`<div class="rule"><div class="rule-head"><strong>#${r.id}</strong>${renderPermissionSet(r.permissionsText)}</div><code>${esc(r.aclFormula || '(sans condition)')}</code>${r.memo?`<div class="rule-explanation">Mémo : ${esc(r.memo)}</div>`:'g}</div>`).join('')}</article>`;
+    return `<article class="technical-resource"><header><strong>${esc(resource.tableId)} · ${esc(resource.colIds || '*')}</strong><span>${rules.length} règle${rules.length>1?'s':''}</span></header>${rules.map(r=>`<div class="rule"><div class="rule-head"><strong>#${r.id}</strong>${renderPermissionSet(r.permissionsText)}</div><code>${esc(r.aclFormula || '(sans condition)')}</code>${r.memo?`<div class="rule-explanation">Mémo : ${esc(r.memo)}</div>`:''}</div>`).join('')}</article>`;
   }).join('') : '<div class="empty-state">Aucune ACL lisible.</div>';
 }
 
@@ -163,7 +163,7 @@ function validatePermissions(v) { return /^(?:all|none|(?:[+-][CRUDS]+)+)$/.test
 function hasOwnerSafety(resource) {
   return (resource.rules || []).some(r => {
     const f = text(r.when); const p = text(r.permissions);
-    return /user\.Access/.test(f) && /(OWNER|owners)/i.test(f) && (p === 'all' || (/\+/.test(p) && ['C','R','U','D'].every(ch => p.includes(ch)));
+    return /user\.Access/.test(f) && /(OWNER|owners)/i.test(f) && (p === 'all' || (/\+/.test(p) && ['C','R','U','D'].every(ch => p.includes(ch))));
   });
 }
 function validatePolicy(policy) {
@@ -188,8 +188,7 @@ function validatePolicy(policy) {
       if (typeof rule?.when !== 'string') errors.push(`${prefix}, règle ${i+1} : when doit être une chaîne (vide autorisée).`);
       if (!validatePermissions(rule?.permissions)) errors.push(`${prefix}, règle ${i+1} : permissions invalides "${text(rule?.permissions)}".`);
     }
-    if (!hasOwnerSafety(res)) errors.push(`${prefix} : sécurité bloquante — ajoute une règle Owner explicite donnant "all" ou +CRUD
-(S).`);
+    if (!hasOwnerSafety(res)) errors.push(`${prefix} : sécurité bloquante — ajoute une règle Owner explicite donnant "all" ou +CRUD(S).`);
     if (!(res.rules || []).some(r => text(r.when) === '')) warnings.push(`${prefix} : aucune règle de repli sans condition.`);
   }
   return {valid: !errors.length, errors, warnings};
@@ -214,7 +213,7 @@ function computeDiff(policy) {
 function validateInput() {
   let policy;
   try { policy = JSON.parse($('#jsonInput').value); }
-  catch (e) { state.imported=null; state.validation={valid:false,errors:[bJSON invalide : ${e.message}`],warnings:[]}; renderValidation(); renderDiff(); renderDashboard(); return; }
+  catch (e) { state.imported=null; state.validation={valid:false,errors:[`JSON invalide : ${e.message}`],warnings:[]}; renderValidation(); renderDiff(); renderDashboard(); return; }
   const validation = validatePolicy(policy); state.validation=validation;
   if (validation.valid) { state.imported=deepClone(policy); state.diff=computeDiff(state.imported); status('JSON valide. La simulation est prête.', 'ok'); }
   else { state.imported=null; state.diff=[]; status('Le JSON contient des erreurs bloquantes.', 'error'); }

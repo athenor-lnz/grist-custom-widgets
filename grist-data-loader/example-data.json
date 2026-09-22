@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "name": "Exemple Grist Data Loader",
+  "description": "Exemple minimal en mode upsert.",
+  "tables": [
+    {
+      "table": "FORMULAIRES",
+      "key": "FORMULAIRE_ID",
+      "mode": "upsert",
+      "rows": [
+        {
+          "FORMULAIRE_ID": "EXEMPLE",
+          "NOM_FORMULAIRE": "Formulaire exemple",
+          "DESCRIPTION": "Ligne créée par Grist Data Loader",
+          "ACTIF": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Grist Data Loader</title>
+  <link rel="stylesheet" href="style.css?v=0.1.0">
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+</head>
+<body>
+<main class="app-shell">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">WIDGET GRIST</p>
+      <h1>Grist Data Loader</h1>
+      <p class="lead">Importez, simulez et appliquez des données de référence dans le document courant.</p>
+    </div>
+    <div id="accessBadge" class="status status-wait"><span class="dot"></span><span>Connexion à Grist…</span></div>
+  </header>
+
+  <section class="card">
+    <div class="section-heading split">
+      <div>
+        <h2>1. Charger un jeu de données</h2>
+        <p>Le JSON décrit les tables cibles, leur clé métier, le mode d’écriture et les lignes à appliquer.</p>
+      </div>
+      <span class="version">v0.1.0</span>
+    </div>
+
+    <div class="button-row">
+      <label class="btn btn-primary file-btn">Charger un JSON
+        <input id="fileInput" type="file" accept=".json,application/json" hidden>
+      </label>
+      <button id="exampleBtn" class="btn btn-secondary" type="button">Charger l’exemple</button>
+      <button id="clearBtn" class="btn btn-ghost" type="button">Réinitialiser</button>
+    </div>
+
+    <div class="json-editor-wrap">
+      <div class="json-toolbar">
+        <strong id="fileName">Aucun fichier chargé</strong>
+        <button id="formatBtn" class="link-btn" type="button">Formater le JSON</button>
+      </div>
+      <textarea id="jsonText" spellcheck="false" placeholder="Collez ici un JSON compatible Grist Data Loader"></textarea>
+    </div>
+
+    <div class="button-row spaced-top">
+      <button id="analyzeBtn" class="btn btn-primary" type="button">2. Analyser</button>
+    </div>
+    <div id="analysisMessage" class="notice hidden" role="status" aria-live="polite"></div>
+  </section>
+
+  <section id="previewSection" class="card hidden">
+    <div class="section-heading split">
+      <div><h2>3. Vérifier le jeu de données</h2><p id="datasetTitle">Jeu de données valide.</p></div>
+      <div class="status status-ok"><span class="dot"></span><span>Valide</span></div>
+    </div>
+    <div id="metrics" class="metrics"></div>
+    <div id="tablesPreview" class="tables-preview"></div>
+    <div class="button-row spaced-top">
+      <button id="simulateBtn" class="btn btn-primary" type="button">4. Simuler dans ce document</button>
+    </div>
+  </section>
+
+  <section id="simulationSection" class="card hidden">
+    <div class="section-heading"><div><h2>5. Simulation</h2><p>Aucune donnée n’est modifiée à cette étape.</p></div></div>
+    <div id="simulationSummary" class="metrics"></div>
+    <div id="simulationDetails" class="tables-preview"></div>
+    <div id="warningBox" class="notice warning hidden"></div>
+    <div class="button-row spaced-top">
+      <button id="backupBtn" class="btn btn-secondary" type="button">Télécharger une sauvegarde</button>
+      <button id="applyBtn" class="btn btn-primary" type="button" disabled>6. Appliquer dans ce document</button>
+    </div>
+  </section>
+
+  <section id="progressSection" class="card hidden">
+    <div class="section-heading"><div><h2>Application</h2><p id="progressText">Préparation…</p></div></div>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div id="log" class="build-log" aria-live="polite"></div>
+  </section>
+
+  <section class="card help-card">
+    <details>
+      <summary>Format JSON attendu</summary>
+      <pre>{
+  "version": 1,
+  "name": "Référentiel exemple",
+  "tables": [
+    {
+      "table": "FORMULAIRES",
+      "key": "FORMULAIRE_ID",
+      "mode": "upsert",
+      "rows": [
+        {"FORMULAIRE_ID":"IPB","NOM_FORMULAIRE":"IPB","ACTIF":true}
+      ]
+    }
+  ]
+}</pre>
+      <p>Pour une référence : <code>{"$ref":{"table":"FORMULAIRES","key":"FORMULAIRE_ID","value":"IPB"}}</code></p>
+      <p>Pour une RefList : <code>{"$refs":[{"table":"OPTIONS","key":"OPTION_ID","value":"O1"}]}</code></p>
+    </details>
+  </section>
+
+  <footer>Grist Data Loader · aucune donnée envoyée à un backend</footer>
+</main>
+<script src="app.js?v=0.1.0"></script>
+</body>
+</html>

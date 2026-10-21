@@ -4,7 +4,7 @@ grist.ready({requiredAccess: 'full'});
 
 const $ = q => document.querySelector(q);
 const $$ = q => [...document.querySelectorAll(q)];
-const VERSION = '0.3.0';
+const VERSION = '0.3.1';
 const SCHEMA = 'grist-acl-studio/v1';
 
 const state = {
@@ -591,7 +591,8 @@ async function applyImportedPolicy() {
   const changes = state.diff.filter(d => d.kind !== 'same');
   if (!changes.length) return;
 
-  download(`grist-acl-backup-${nowStamp()}.json`, JSON.stringify(buildCurrentPolicy(), null, 2));
+  // Une sauvegarde explicite reste disponible via le bouton dédié.
+  // Ne pas lancer de téléchargement surprise au clic sur Appliquer.
   $('#applyBtn').disabled = true;
   status('Application des permissions…', 'warn', 0);
 
@@ -630,6 +631,18 @@ async function applyImportedPolicy() {
     }
 
     await grist.docApi.applyUserActions(actions);
+    // Vérifier que les ACL nouvelles sont réellement visibles après écriture.
+    const actualResources = await fetchRows('_grist_ACLResources');
+    const actualRules = await fetchRows('_grist_ACLRules');
+    for (const change of changes) {
+      const target = change.target;
+      const resource = actualResources.find(r => resourceKey(r.tableId, r.colIds) === resourceKey(target.table, target.columns));
+      if (!resource) throw new Error(`Écriture non confirmée : ressource ${target.table}/${target.columns} absente après application.`);
+      const persisted = actualRules.filter(r => Number(r.resource) === Number(resource.id) && !text(r.userAttributes).trim());
+      const expected = comparableRules(target.rules);
+      const observed = comparableRules(persisted.map(normalizeExportRule));
+      if (JSON.stringify(expected) !== JSON.stringify(observed)) throw new Error(`Écriture non confirmée pour ${target.table} : vérifier les règles natives avant toute nouvelle tentative.`);
+    }
     state.imported = null;
     state.validation = null;
     state.diff = [];
@@ -639,7 +652,7 @@ async function applyImportedPolicy() {
     status('Permissions appliquées avec succès.', 'ok', 6000);
   } catch (e) {
     console.error(e);
-    status(`Échec de l'application : ${e.message || e}`, 'error', 0);
+    status(`Échec de l'application : ${e.message || e}. Aucune réussite présumée : vérifier dans Outils > Règles d'accès avant de réessayer.`, 'error', 0);
     $('#applyBtn').disabled = false;
   }
 }

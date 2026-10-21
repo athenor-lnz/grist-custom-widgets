@@ -4,7 +4,7 @@ grist.ready({requiredAccess: 'full'});
 
 const $ = q => document.querySelector(q);
 const $$ = q => [...document.querySelectorAll(q)];
-const VERSION = '0.3.1';
+const VERSION = '0.3.2';
 const SCHEMA = 'grist-acl-studio/v1';
 
 const state = {
@@ -589,60 +589,79 @@ function currentResourceMatches(target) {
 async function applyImportedPolicy() {
   if (!state.imported || !state.validation?.valid) return;
   const changes = state.diff.filter(d => d.kind !== 'same');
-  if (!changes.length) return;
+  if (!changes.length) { $('#diffDialog').close(); return; }
 
-  // Une sauvegarde explicite reste disponible via le bouton dédié.
-  // Ne pas lancer de téléchargement surprise au clic sur Appliquer.
   $('#applyBtn').disabled = true;
   status('Application des permissions…', 'warn', 0);
 
   try {
-    const actions = [];
-
+    // Grist ne résout pas les références ACLRule vers les identifiants
+    // temporaires d'ACLResource au sein du même lot.
+    // On crée d'abord les ressources manquantes, puis on relit leurs
+    // identifiants définitifs avant de créer les règles.
+    let actualResources = await fetchRows('_grist_ACLResources');
     for (const change of changes) {
-      for (const existing of currentResourceMatches(change.target)) {
-        for (const rule of rulesForResource(existing.id)) {
-          actions.push(['RemoveRecord', '_grist_ACLRules', rule.id]);
+      const target = change.target;
+      const key = resourceKey(target.table, target.columns);
+      if (!actualResources.some(r => resourceKey(r.tableId, r.colIds) === key)) {
+        await grist.docApi.applyUserActions([['AddRecord', '_grist_ACLResources', null, {
+          tableId: text(target.table), colIds: canonCols(target.columns)
+        }]]);
+        actualResources = await fetchRows('_grist_ACLResources');
+        if (!actualResources.some(r => resourceKey(r.tableId, r.colIds) === key)) {
+          throw new Error(`Ressource ${target.table} créée mais introuvable lors de la relecture.`);
         }
-        actions.push(['RemoveRecord', '_grist_ACLResources', existing.id]);
       }
     }
 
-    let tempId = -1;
+    const ruleActions = [];
+    const currentRules = await fetchRows('_grist_ACLRules');
     for (const change of changes) {
-      const res = change.target;
-      const rid = tempId--;
-      actions.push(['AddRecord', '_grist_ACLResources', rid, {
-        tableId:text(res.table),
-        colIds:canonCols(res.columns)
-      }]);
+      const target = change.target;
+      const resource = actualResources.find(r =>
+        resourceKey(r.tableId, r.colIds) === resourceKey(target.table, target.columns));
+      if (!resource || !(Number(resource.id) > 0)) {
+        throw new Error(`Identifiant invalide pour ${target.table}.`);
+      }
 
-      (res.rules || []).forEach((rule, index) => {
+      // On conserve la ressource existante et remplace ses règles
+      // dans une même transaction plutôt que de la supprimer.
+      for (const rule of currentRules.filter(r =>
+        Number(r.resource) === Number(resource.id) && !text(r.userAttributes).trim())) {
+        ruleActions.push(['RemoveRecord', '_grist_ACLRules', rule.id]);
+      }
+      (target.rules || []).forEach((rule, index) => {
         const fields = {
-          resource:rid,
-          aclFormula:text(rule.when),
-          permissionsText:text(rule.permissions),
-          rulePos:(index + 1) * 1000
+          resource: Number(resource.id),
+          aclFormula: text(rule.when),
+          permissionsText: text(rule.permissions),
+          rulePos: (index + 1) * 1000
         };
         if (text(rule.memo)) fields.memo = text(rule.memo);
         if (text(rule.principals)) fields.principals = text(rule.principals);
-        actions.push(['AddRecord', '_grist_ACLRules', null, fields]);
+        ruleActions.push(['AddRecord', '_grist_ACLRules', null, fields]);
       });
     }
+    await grist.docApi.applyUserActions(ruleActions);
 
-    await grist.docApi.applyUserActions(actions);
-    // Vérifier que les ACL nouvelles sont réellement visibles après écriture.
-    const actualResources = await fetchRows('_grist_ACLResources');
+    // Pas de faux positif : on vérifie les règles réellement persistées.
+    actualResources = await fetchRows('_grist_ACLResources');
     const actualRules = await fetchRows('_grist_ACLRules');
     for (const change of changes) {
       const target = change.target;
-      const resource = actualResources.find(r => resourceKey(r.tableId, r.colIds) === resourceKey(target.table, target.columns));
-      if (!resource) throw new Error(`Écriture non confirmée : ressource ${target.table}/${target.columns} absente après application.`);
-      const persisted = actualRules.filter(r => Number(r.resource) === Number(resource.id) && !text(r.userAttributes).trim());
+      const resource = actualResources.find(r =>
+        resourceKey(r.tableId, r.colIds) === resourceKey(target.table, target.columns));
+      if (!resource) throw new Error(`Écriture non confirmée : ${target.table} absent.`);
+      const persisted = actualRules.filter(r =>
+        Number(r.resource) === Number(resource.id) && !text(r.userAttributes).trim())
+        .sort((a, b) => Number(a.rulePos) - Number(b.rulePos));
       const expected = comparableRules(target.rules);
       const observed = comparableRules(persisted.map(normalizeExportRule));
-      if (JSON.stringify(expected) !== JSON.stringify(observed)) throw new Error(`Écriture non confirmée pour ${target.table} : vérifier les règles natives avant toute nouvelle tentative.`);
+      if (JSON.stringify(expected) !== JSON.stringify(observed)) {
+        throw new Error(`Écriture non confirmée pour ${target.table}. Vérifier les règles natives.`);
+      }
     }
+
     state.imported = null;
     state.validation = null;
     state.diff = [];
@@ -652,7 +671,8 @@ async function applyImportedPolicy() {
     status('Permissions appliquées avec succès.', 'ok', 6000);
   } catch (e) {
     console.error(e);
-    status(`Échec de l'application : ${e.message || e}. Aucune réussite présumée : vérifier dans Outils > Règles d'accès avant de réessayer.`, 'error', 0);
+    status(`Échec de l'application : ${e.message || e}`, 'error', 0);
+  } finally {
     $('#applyBtn').disabled = false;
   }
 }
